@@ -1,0 +1,17 @@
+{
+    "name": "withers-playwright-tests",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Withers QA automation project (Playwright + k6)",
+    "scripts": {
+        "test": "npx playwright test -c .",
+        "test:headed": "npx playwright test -c . --headed",
+        "test:ui": "npx playwright test -c . --ui",
+        "test:nonfunctional": "npx playwright test -c . 09-withers.nonfunctional.spec.js",
+        "load:smoke": "k6 run --env SCENARIO=smoke 10-withers.load.k6.js"
+    },
+    "devDependencies": {
+        "@axe-core/playwright": "^4.11.2",
+        "@playwright/test": "^1.52.0"
+    }
+}

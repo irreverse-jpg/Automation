@@ -1,0 +1,14 @@
+{
+  "name": "playwright-tests",
+  "version": "1.0.0",
+  "description": "Playwright test automation project",
+  "scripts": {
+    "test": "npx playwright test -c .",
+    "test:headed": "npx playwright test -c . --headed",
+    "test:ui": "npx playwright test -c . --ui"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.2",
+    "@playwright/test": "^1.42.0"
+  }
+}

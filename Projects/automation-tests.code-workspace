@@ -1,0 +1,37 @@
+{
+    "folders": [
+        {
+            "name": "PBS",
+            "path": "PBS"
+        },
+        {
+            "name": "Withers",
+            "path": "Withers"
+        },
+        {
+            "name": "Shared",
+            "path": "../Shared"
+        }
+    ],
+    "settings": {
+        "testing.automaticallyOpenPeekView": "never",
+        "editor.codeLens": true,
+        "testing.gutterEnabled": true,
+        "testing.defaultGutterClickAction": "run",
+        "chat.tools.terminal.autoApprove": {
+            "/^Set-Location \"c:\\\\Users\\\\HectorOrtegaModernCi\\\\OneDrive - Candid Group B\\.V\\\\QA Department\\\\Automation\\\\Projects\\\\PBS\"; node -e \"try \\{ console\\.log\\(require\\.resolve\\('acorn'\\)\\); \\} catch \\(error\\) \\{ console\\.log\\('MISSING'\\); \\}\"$/": {
+                "approve": true,
+                "matchCommandLine": true
+            },
+            "/^Set-Location \"c:\\\\Users\\\\HectorOrtegaModernCi\\\\OneDrive - Candid Group B\\.V\\\\QA Department\\\\Automation\\\\Projects\\\\PBS\"; node -e \"for \\(const name of \\['@babel/parser','espree','typescript'\\]\\) \\{ try \\{ console\\.log\\(name \\+ ':' \\+ require\\.resolve\\(name\\)\\); \\} catch \\(error\\) \\{ console\\.log\\(name \\+ ':MISSING'\\); \\} \\}\"$/": {
+                "approve": true,
+                "matchCommandLine": true
+            },
+            "Set-Content": true,
+            "/^Set-Location \"c:\\\\Users\\\\HectorOrtegaModernCi\\\\OneDrive - Candid Group B\\.V\\\\QA Department\\\\Automation\\\\Projects\\\\Withers\"; @'\nconst \\{ chromium \\} = require\\('playwright'\\);\n\\(async \\(\\) => \\{\n  const browser = await chromium\\.launch\\(\\{ headless: true \\}\\);\n  const page = await browser\\.newPage\\(\\);\n  await page\\.goto\\('https://w-uat\\.hosted\\.positive\\.co\\.uk/', \\{ waitUntil: 'domcontentloaded', timeout: 60000 \\}\\);\n  const cookieButton = page\\.locator\\('button\\[aria-label=\"Accept cookies\"\\], button:has-text\\(\"Accept\"\\), #onetrust-accept-btn-handler'\\)\\.first\\(\\);\n  if \\(await cookieButton\\.isVisible\\(\\)\\.catch\\(\\(\\) => false\\)\\) await cookieButton\\.click\\(\\);\n  const openMenuButton = page\\.getByRole\\('button', \\{ name: /Open menu\\|Menu/i \\}\\)\\.first\\(\\);\n  if \\(await openMenuButton\\.isVisible\\(\\)\\.catch\\(\\(\\) => false\\)\\) await openMenuButton\\.click\\(\\);\n  const navInfo = await page\\.evaluate\\(\\(\\) => \\{\n    const navRoot = document\\.querySelector\\('header nav\\[aria-label=\"Primary\"\\], header nav'\\);\n    const isVisible = \\(el\\) => \\{\n      const s = window\\.getComputedStyle\\(el\\);\n      return s\\.display !== 'none' && s\\.visibility !== 'hidden' && el\\.getClientRects\\(\\)\\.length > 0;\n    \\};\n    return Array\\.from\\(navRoot\\.querySelectorAll\\('li'\\)\\)\\.slice\\(0, 20\\)\\.map\\(\\(li\\) => \\(\\{\n      text: \\(li\\.textContent \\|\\| ''\\)\\.replace\\(/\\\\s\\+/g, ' '\\)\\.trim\\(\\),\n      html: li\\.outerHTML\\.slice\\(0, 500\\),\n      visibleChildren: Array\\.from\\(li\\.querySelectorAll\\('\\*'\\)\\)\\.filter\\(isVisible\\)\\.slice\\(0, 8\\)\\.map\\(\\(el\\) => \\(\\{\n        tag: el\\.tagName,\n        role: el\\.getAttribute\\('role'\\),\n        aria: el\\.getAttribute\\('aria-label'\\),\n        text: \\(el\\.textContent \\|\\| ''\\)\\.replace\\(/\\\\s\\+/g, ' '\\)\\.trim\\(\\)\\.slice\\(0, 120\\),\n        cls: el\\.className\n      \\}\\)\\)\n    \\}\\)\\);\n  \\}\\);\n  console\\.log\\(JSON\\.stringify\\(navInfo, null, 2\\)\\);\n  await browser\\.close\\(\\);\n\\}\\)\\(\\)\\.catch\\(\\(err\\) => \\{ console\\.error\\(err\\); process\\.exit\\(1\\); \\}\\);\n'@ \\| node$/": {
+                "approve": true,
+                "matchCommandLine": true
+            }
+        }
+    }
+}

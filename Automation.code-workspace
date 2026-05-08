@@ -1,0 +1,11 @@
+﻿{
+  "folders": [
+    { "name": "Projects", "path": "Projects" },
+    { "name": "Shared", "path": "Shared" }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true
+    }
+  }
+}
