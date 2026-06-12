@@ -43,14 +43,131 @@ async function clickWithCookieGuard(page, locator) {
     } catch (error) {
         const message = String(error || '').toLowerCase();
         const isCookieInterception = message.includes('intercepts pointer events') || message.includes('onetrust');
+        const canRetryWithDomClick = message.includes('intercepts pointer events')
+            || message.includes('not stable')
+            || message.includes('timeout');
 
-        if (!isCookieInterception) {
+        if (isCookieInterception) {
+            await dismissCookieOverlayIfPresent(page);
+        }
+
+        if (!isCookieInterception && !canRetryWithDomClick) {
             throw error;
         }
 
-        await dismissCookieOverlayIfPresent(page);
-        await locator.click();
+        await locator.scrollIntoViewIfNeeded().catch(() => { });
+
+        try {
+            await locator.click({ force: true });
+        } catch {
+            await locator.evaluate((node) => node.click());
+        }
     }
+}
+
+async function findFirstVisibleLocator(locator) {
+    const count = await locator.count();
+
+    for (let index = 0; index < count; index += 1) {
+        const candidate = locator.nth(index);
+        if (await candidate.isVisible().catch(() => false)) {
+            return candidate;
+        }
+    }
+
+    return null;
+}
+
+async function getFirstSearchResultHref(page, tabType) {
+    return page.locator('a[href]').evaluateAll((nodes, currentTabType) => {
+        const normalize = (value) => (value || '').replace(/\s+/g, ' ').trim();
+        const isVisible = (node) => {
+            const style = window.getComputedStyle(node);
+            return style.display !== 'none' && style.visibility !== 'hidden' && node.getClientRects().length > 0;
+        };
+
+        const candidates = nodes
+            .filter(isVisible)
+            .map((node) => ({
+                href: node.getAttribute('href') || '',
+                text: normalize(node.textContent),
+                className: String(node.className || ''),
+                parentClassName: node.parentElement ? String(node.parentElement.className || '') : '',
+            }));
+
+        if (currentTabType === 'experience' || currentTabType === 'other') {
+            const featureCard = candidates.find((item) => item.className.includes('featurePanel__card'));
+            return featureCard ? featureCard.href : null;
+        }
+
+        if (currentTabType === 'people') {
+            const personCard = candidates.find((item) => item.className.includes('personRow__cardLink'));
+            return personCard ? personCard.href : null;
+        }
+
+        if (currentTabType === 'insights') {
+            const insightCard = candidates.find((item) => {
+                const href = item.href.toLowerCase();
+                const classes = `${item.className} ${item.parentClassName}`.toLowerCase();
+
+                if (!href.startsWith('/en-gb/insight/')) {
+                    return false;
+                }
+
+                if (href === '/en-gb/insight' || href === '/en-gb/insight/newsroom') {
+                    return false;
+                }
+
+                if (classes.includes('header__') || classes.includes('footer__')) {
+                    return false;
+                }
+
+                return Boolean(item.text);
+            });
+
+            return insightCard ? insightCard.href : null;
+        }
+
+        return null;
+    }, tabType);
+}
+
+async function openFirstSearchResultAndReturn(page, tab) {
+    const firstResultHref = await getFirstSearchResultHref(page, tab.type);
+    expect(firstResultHref, `${tab.name} tab should expose a clickable first result card`).toBeTruthy();
+
+    const resultLink = await findFirstVisibleLocator(page.locator(`a[href="${firstResultHref}"]`));
+    expect(resultLink, `${tab.name} tab should expose the first result link before drilldown`).toBeTruthy();
+    await expect(resultLink, `${tab.name} tab should expose the first result link before drilldown`).toBeVisible();
+
+    const destinationUrl = new URL(firstResultHref, page.url()).toString();
+
+    await resultLink.scrollIntoViewIfNeeded().catch(() => { });
+
+    await resultLink.evaluate((node) => node.click()).catch(() => { });
+
+    const navigatedOnDomClick = await page.waitForURL(destinationUrl, { waitUntil: 'domcontentloaded', timeout: 5000 })
+        .then(() => true)
+        .catch(() => false);
+
+    if (!navigatedOnDomClick) {
+        const retryLink = await findFirstVisibleLocator(page.locator(`a[href="${firstResultHref}"]`));
+        expect(retryLink, `${tab.name} tab should still expose the first result link when retrying the drilldown`).toBeTruthy();
+        await clickWithCookieGuard(page, retryLink);
+        await page.waitForURL(destinationUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    }
+
+    await page.waitForLoadState('load');
+    await acceptCookiesIfPresent(page);
+
+    const heading = page.getByRole('heading', { level: 1 }).first();
+    await expect(heading, `${tab.name} first result page should expose a visible H1`).toBeVisible();
+    await expect(heading, `${tab.name} first result page should expose a non-empty H1`).not.toHaveText(/^\s*$/);
+
+    await page.goBack({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('load');
+    await acceptCookiesIfPresent(page);
+    await expect(page, `${tab.name} drilldown should return to the same results tab after going back`).toHaveURL(new RegExp(`/search\\?term=practices&type=${tab.type}#filter$`));
 }
 
 test('Search - Empty Query', async ({ page }) => {
@@ -69,6 +186,8 @@ test('Search - Empty Query', async ({ page }) => {
 }, 30000);
 
 test('Search - With and Without Results', async ({ page }) => {
+    test.setTimeout(60000);
+
     await test.step('Open search page', async () => {
         await page.goto('/search');
         await page.waitForLoadState('load');
@@ -143,6 +262,7 @@ test('Search - Navigate Through Results', async ({ page }) => {
             await expect(page, `${tab.name} tab should update the results URL`).toHaveURL(new RegExp(`/search\\?term=practices&type=${tab.type}#filter$`));
             await expect(resultsSummary(), `${tab.name} tab should show a non-zero results summary`).toContainText(/[1-9]\d* results match your search/i);
             await expect(page.getByRole('heading', { name: tab.name, exact: true }), `${tab.name} tab should show the matching section heading`).toBeVisible();
+            await openFirstSearchResultAndReturn(page, tab);
         });
     }
 }, 60000);

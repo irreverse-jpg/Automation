@@ -1,1 +1,3 @@
-2
+{
+  "careers-recruitment-enquiries": 2
+}

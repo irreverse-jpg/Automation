@@ -3,6 +3,7 @@ const { getCurrentSubmissionNumber, incrementSubmissionNumber } = require('./sub
 
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
+const CONTACT_FORM_COUNTER_KEY = 'contact-us';
 const REGION_OPTIONS = ['APAC', 'UK', 'USA'];
 const COUNTRY_OPTIONS = ['Singapore', 'United Kingdom', 'United States'];
 const ENQUIRY_SEEDS = [
@@ -14,6 +15,26 @@ const ENQUIRY_SEEDS = [
 
 function getSubmitButton(page) {
     return page.locator('input[type="submit"][value="Submit"], button:has-text("Submit")').first();
+}
+
+async function submitContactForm(page) {
+    let submitButton = getSubmitButton(page);
+    await expect(submitButton, 'The contact form should expose the Submit button').toBeVisible();
+
+    try {
+        await clickWithCookieGuard(page, submitButton);
+    } catch (error) {
+        const message = String(error || '').toLowerCase();
+        const isTransientSubmitError = message.includes('not attached to the dom') || message.includes('element is not stable');
+
+        if (!isTransientSubmitError) {
+            throw error;
+        }
+
+        submitButton = getSubmitButton(page);
+        await expect(submitButton, 'The contact form should still expose the Submit button after the page settles').toBeVisible();
+        await clickWithCookieGuard(page, submitButton);
+    }
 }
 
 function numberToWord(n) {
@@ -95,7 +116,7 @@ async function clickWithCookieGuard(page, locator) {
     }
 }
 
-test('Forms - Verify Form is Present', async ({ page }) => {
+test('Contact Form - Verify it is Present', async ({ page }) => {
     await test.step('Open the contact page', async () => {
         await page.goto('/contact-us', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
@@ -115,7 +136,7 @@ test('Forms - Verify Form is Present', async ({ page }) => {
     });
 }, 30000);
 
-test('Forms - Validate When All Fields Empty', async ({ page }) => {
+test('Contact Form - Validate When All Fields Empty', async ({ page }) => {
     await test.step('Open the contact page', async () => {
         await page.goto('/contact-us', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
@@ -124,10 +145,7 @@ test('Forms - Validate When All Fields Empty', async ({ page }) => {
     });
 
     await test.step('Submit the form with all required fields empty', async () => {
-        const submitButton = getSubmitButton(page);
-        await expect(submitButton, 'The contact form should expose the Submit button').toBeVisible();
-        await submitButton.scrollIntoViewIfNeeded();
-        await clickWithCookieGuard(page, submitButton);
+        await submitContactForm(page);
     });
 
     await test.step('Verify the form is not submitted and required-field validation appears', async () => {
@@ -138,7 +156,7 @@ test('Forms - Validate When All Fields Empty', async ({ page }) => {
     });
 });
 
-test('Forms - Validate Partial Submission', async ({ page }) => {
+test('Contact Form - Validate Partial Submission', async ({ page }) => {
     await test.step('Open the contact page', async () => {
         await page.goto('/contact-us', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
@@ -150,10 +168,7 @@ test('Forms - Validate Partial Submission', async ({ page }) => {
         const emailField = page.getByLabel(/Email address/i);
         await emailField.fill('test@example.com');
 
-        const submitButton = getSubmitButton(page);
-        await expect(submitButton, 'The contact form should expose the Submit button').toBeVisible();
-        await submitButton.scrollIntoViewIfNeeded();
-        await clickWithCookieGuard(page, submitButton);
+        await submitContactForm(page);
     });
 
     await test.step('Verify the form stays on the contact page and shows missing-field validation', async () => {
@@ -164,8 +179,8 @@ test('Forms - Validate Partial Submission', async ({ page }) => {
     });
 });
 
-test('Forms - Validate Successful Submission', async ({ page }) => {
-    const submissionNumber = getCurrentSubmissionNumber();
+test('Contact Form - Validate Successful Submission', async ({ page }) => {
+    const submissionNumber = getCurrentSubmissionNumber(CONTACT_FORM_COUNTER_KEY);
     const submission = buildUniqueSubmissionData(submissionNumber);
 
     await test.step('Open the contact page', async () => {
@@ -186,14 +201,11 @@ test('Forms - Validate Successful Submission', async ({ page }) => {
     });
 
     await test.step('Submit the completed contact form', async () => {
-        const submitButton = getSubmitButton(page);
-        await expect(submitButton, 'The contact form should expose the Submit button').toBeVisible();
-        await submitButton.scrollIntoViewIfNeeded();
-        await clickWithCookieGuard(page, submitButton);
+        await submitContactForm(page);
     });
 
     await test.step('Verify the submission succeeds and advance the submission counter', async () => {
         await expect(page.getByText(/thank you|thanks|we\'ll be in touch|received/i).first(), 'A successful contact form submission should show a success acknowledgement').toBeVisible();
-        incrementSubmissionNumber();
+        incrementSubmissionNumber(CONTACT_FORM_COUNTER_KEY);
     });
 });

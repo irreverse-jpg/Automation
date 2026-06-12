@@ -129,6 +129,18 @@ function escapeRegExp(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function getLeadingTitleFragment(value, wordCount = 10) {
+    return trimCollapsedText(value).split(/\s+/).slice(0, wordCount).join(' ');
+}
+
+function normalizeInsightArticleTitle(value) {
+    return trimCollapsedText(String(value || '').replace(/^(?:HERO TITLE|HT|LABEL)\s+/i, ''));
+}
+
+function normalizeInsightPath(value) {
+    return decodeURIComponent(new URL(String(value || ''), 'https://www.withersworldwide.com').pathname);
+}
+
 function createSeededNumberGenerator(seed) {
     let state = seed >>> 0;
 
@@ -172,6 +184,197 @@ function getSearchNoResultsMessage(page) {
 
 function getSearchDropdown(page, fieldName) {
     return page.locator('.filter__select').filter({ has: page.locator(`input[name="${fieldName}"]`) }).first();
+}
+
+function getInsightTabLink(page, tabLabel) {
+    if (tabLabel === 'Search') {
+        return page.getByText('Search', { exact: true });
+    }
+
+    if (tabLabel === 'Read') {
+        return page.getByRole('link', { name: 'Read', exact: true });
+    }
+
+    return page.getByRole('link', { name: tabLabel });
+}
+
+function getInsightTabUrlPattern(tabLabel) {
+    return new RegExp(`/insight\\?tab=${tabLabel.toLowerCase()}(?:&scrollToTabs)?$`, 'i');
+}
+
+async function openInsightLandingPage(page) {
+    await page.goto('/insight', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('load');
+    await acceptCookiesIfPresent(page);
+    await expect(page, 'The Insight traversal flow should start from the localized Insight page').toHaveURL(/\/insight$/i);
+}
+
+async function openInsightTab(page, tabLabel) {
+    const tabLink = getInsightTabLink(page, tabLabel);
+    await expect(tabLink, `The Insight page should expose the ${tabLabel} tab before opening it`).toBeVisible();
+    await clickWithCookieGuard(page, tabLink);
+    await expect(page, `Selecting ${tabLabel} should update the URL to the expected Insight tab route`).toHaveURL(getInsightTabUrlPattern(tabLabel));
+
+    if (tabLabel === 'Search') {
+        await getSearchApplyButton(page).waitFor({ state: 'visible', timeout: 30000 });
+    } else {
+        await page.waitForLoadState('domcontentloaded');
+    }
+
+    await dismissCookieOverlayIfPresent(page);
+}
+
+async function getFeaturedInsightSample(page) {
+    const featuredHeading = page.getByRole('heading', { level: 1 }).first();
+    await expect(featuredHeading, 'The Featured Insight hero should expose the lead article heading before traversal starts').toBeVisible();
+
+    const readMoreLink = page.getByRole('link', { name: 'READ MORE' }).first();
+    await expect(readMoreLink, 'The Featured Insight hero should expose the READ MORE CTA before traversal starts').toBeVisible();
+
+    const href = await readMoreLink.getAttribute('href');
+    expect(href, 'The Featured Insight hero should link to an article destination').toBeTruthy();
+
+    return {
+        index: 1,
+        title: trimCollapsedText(await featuredHeading.innerText()),
+        normalizedTitle: normalizeInsightArticleTitle(await featuredHeading.innerText()),
+        titleFragment: getLeadingTitleFragment(normalizeInsightArticleTitle(await featuredHeading.innerText())),
+        date: null,
+        path: normalizeInsightPath(href),
+        requiredVisibleCardCount: 1,
+    };
+}
+
+async function getInsightArticleCards(page) {
+    return page.locator('.articleCard').evaluateAll((nodes) => {
+        const trimText = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+        const normalizeTitle = (value) => trimText(String(value || '').replace(/^(?:HERO TITLE|HT|LABEL)\s+/i, ''));
+
+        return nodes.map((node, index) => {
+            const link = node.querySelector('h3 a[href]');
+            const title = trimText(link?.textContent || '');
+            const date = trimText(node.querySelector('.label p')?.textContent || '');
+            const href = link?.getAttribute('href') || '';
+            const path = href ? decodeURIComponent(new URL(href, window.location.origin).pathname) : '';
+
+            return {
+                index: index + 1,
+                title,
+                normalizedTitle: normalizeTitle(title),
+                titleFragment: trimText(normalizeTitle(title)).split(/\s+/).slice(0, 10).join(' '),
+                date,
+                path,
+            };
+        }).filter((card) => card.title && card.path);
+    });
+}
+
+async function revealInsightCardsToCount(page, targetCount, scenarioLabel) {
+    let cards = await getInsightArticleCards(page);
+
+    while (cards.length < targetCount) {
+        const showMoreButton = page.getByRole('button', { name: /^Show more$/i }).first();
+        const previousCount = cards.length;
+
+        await expect(showMoreButton, `${scenarioLabel} should keep exposing Show more until at least ${targetCount} cards are visible`).toBeVisible();
+
+        let expanded = false;
+        for (let attempt = 0; attempt < 3 && !expanded; attempt += 1) {
+            await dismissCookieOverlayIfPresent(page);
+            await showMoreButton.scrollIntoViewIfNeeded().catch(() => { });
+
+            if (attempt === 0) {
+                await clickWithCookieGuard(page, showMoreButton);
+            } else {
+                await showMoreButton.click({ force: true });
+            }
+
+            try {
+                await expect.poll(async () => {
+                    const nextCards = await getInsightArticleCards(page);
+                    return nextCards.length;
+                }, {
+                    timeout: 5000,
+                }).toBeGreaterThan(previousCount);
+                expanded = true;
+            } catch (error) {
+                if (attempt === 2) {
+                    throw error;
+                }
+            }
+        }
+
+        cards = await getInsightArticleCards(page);
+    }
+
+    return cards;
+}
+
+async function assertInsightArticlePage(page, sample, scenarioLabel) {
+    await page.waitForLoadState('load');
+    await dismissCookieOverlayIfPresent(page);
+
+    await expect.poll(() => normalizeInsightPath(page.url()), {
+        message: `${scenarioLabel} should open the expected Insight article route`,
+        timeout: 30000,
+    }).toBe(sample.path);
+
+    await expect(page, `${scenarioLabel} should expose the sampled article title in the page title`).toHaveTitle(new RegExp(escapeRegExp(sample.titleFragment), 'i'));
+
+    const articleH1 = page.getByRole('heading', { level: 1 }).first();
+    await expect(articleH1, `${scenarioLabel} should load a visible article H1`).toBeVisible();
+    await expect.poll(async () => normalizeInsightArticleTitle(await articleH1.innerText()), {
+        message: `${scenarioLabel} should keep the sampled title in the article H1`,
+        timeout: 30000,
+    }).toContain(sample.titleFragment);
+
+    const hero = page.locator('.hero').first();
+    await expect(hero, `${scenarioLabel} should load with a visible article hero`).toBeVisible();
+
+    if (sample.date) {
+        const [publishedDate, articleType] = sample.date.split('|').map(trimCollapsedText);
+        await expect(hero, `${scenarioLabel} should keep the sampled card date in the article hero`).toContainText(new RegExp(escapeRegExp(publishedDate), 'i'));
+
+        if (articleType) {
+            await expect(hero, `${scenarioLabel} should keep the sampled card type in the article hero`).toContainText(new RegExp(escapeRegExp(articleType), 'i'));
+        }
+    } else {
+        await expect(hero, `${scenarioLabel} should show a published date in the article hero even when the Featured card does not expose it pre-click`).toContainText(/\d{1,2}\s+[A-Z]+\s+\d{4}/i);
+    }
+
+    const xShareLink = page.locator('a[href*="twitter.com/share"], a[aria-label*="Twitter" i], a[aria-label*="X" i]').first();
+    const linkedInShareLink = page.getByRole('link', { name: /Share on LinkedIn/i }).first();
+    const facebookShareLink = page.getByRole('link', { name: /Share on Facebook/i }).first();
+    const emailShareLink = page.getByRole('link', { name: /Share on Email/i }).first();
+
+    await expect(xShareLink, `${scenarioLabel} should expose the X or Twitter share control below the article content`).toBeVisible();
+    await expect(xShareLink, `${scenarioLabel} should link the X or Twitter share control to the expected share endpoint`).toHaveAttribute('href', /twitter\.com|x\.com/i);
+    await expect(xShareLink, `${scenarioLabel} should open the X or Twitter share control in a new page`).toHaveAttribute('target', '_blank');
+
+    await expect(linkedInShareLink, `${scenarioLabel} should expose the LinkedIn share control below the article content`).toBeVisible();
+    await expect(linkedInShareLink, `${scenarioLabel} should link the LinkedIn share control to the expected share endpoint`).toHaveAttribute('href', /linkedin\.com/i);
+    await expect(linkedInShareLink, `${scenarioLabel} should open the LinkedIn share control in a new page`).toHaveAttribute('target', '_blank');
+
+    await expect(facebookShareLink, `${scenarioLabel} should expose the Facebook share control below the article content`).toBeVisible();
+    await expect(facebookShareLink, `${scenarioLabel} should link the Facebook share control to the expected share endpoint`).toHaveAttribute('href', /facebook\.com/i);
+    await expect(facebookShareLink, `${scenarioLabel} should open the Facebook share control in a new page`).toHaveAttribute('target', '_blank');
+
+    await expect(emailShareLink, `${scenarioLabel} should expose the Email share control below the article content`).toBeVisible();
+    await expect(emailShareLink, `${scenarioLabel} should keep the Email share control as a mailto link`).toHaveAttribute('href', /^mailto:/i);
+
+    const joinHeading = page.getByRole('heading', { level: 2, name: 'Join the club' }).first();
+    if (await joinHeading.isVisible().catch(() => false)) {
+        await joinHeading.scrollIntoViewIfNeeded();
+        await expect(joinHeading, `${scenarioLabel} should expose the optional Join the club section when it is present`).toBeVisible();
+
+        const joinSection = page.locator('xpath=//h2[normalize-space()="Join the club"]/ancestor::section[1]').first();
+        const signUpHereLink = joinSection.getByRole('link', { name: /Sign up here/i }).first();
+        await expect(signUpHereLink, `${scenarioLabel} should show the Sign up here CTA when Join the club is present`).toBeVisible();
+    }
+
+    const footer = page.getByRole('contentinfo').first();
+    await footer.scrollIntoViewIfNeeded();
+    await expect(footer, `${scenarioLabel} should keep the footer visible below the article page content`).toBeVisible();
 }
 
 async function openInsightSearchTab(page) {
@@ -317,8 +520,11 @@ test('Insight - Featured', async ({ page }) => {
     });
 
     await test.step('Verify the hero and highlighted insight tabs', async () => {
-        await expect(page.getByText(/^Insight$/).first(), 'The insight landing page should show the Insight section label').toBeVisible();
-        await expect(page.getByRole('heading', { level: 1 }).first(), 'The insight landing page should show a featured insight headline').toBeVisible();
+        const featuredHeadline = page.getByRole('heading', { level: 1 }).first();
+        const featuredHero = featuredHeadline.locator('xpath=ancestor::*[self::section or self::div][1]');
+
+        await expect(featuredHeadline, 'The insight landing page should show a featured insight headline').toBeVisible();
+        await expect(featuredHero.locator('p').filter({ hasText: /^Insight$/i }).first(), 'The insight landing page should show the Insight section label in the hero').toBeVisible();
 
         const readMoreLink = page.getByRole('link', { name: 'READ MORE' });
         await expect(readMoreLink, 'The insight hero should include a READ MORE link').toBeVisible();
@@ -750,7 +956,7 @@ test('Insight - Search', async ({ page }) => {
     });
 });
 
-test('Insight - Search Filters Dropdowns', async ({ page }) => {
+test('Insight - Search - Filter Using Dropdowns', async ({ page }) => {
     test.setTimeout(120000);
 
     await test.step('Open the Insight Search tab and cache the live dropdown options', async () => {
@@ -790,7 +996,7 @@ test('Insight - Search Filters Dropdowns', async ({ page }) => {
     }
 });
 
-test('Insight - Search Filters Text', async ({ page }) => {
+test('Insight - Search - Filter Using Text', async ({ page }) => {
     test.setTimeout(120000);
 
     await test.step('Open the Insight Search tab', async () => {
@@ -805,7 +1011,7 @@ test('Insight - Search Filters Text', async ({ page }) => {
     }
 });
 
-test('Insight - Search Filters Mixed', async ({ page }) => {
+test('Insight - Search - Filter Using Dropdowns and Text', async ({ page }) => {
     test.setTimeout(120000);
 
     await test.step('Open the Insight Search tab and cache the live dropdown options', async () => {
@@ -864,7 +1070,7 @@ test('Insight - Search Filters Mixed', async ({ page }) => {
     }
 });
 
-test('Insight - Search No Results', async ({ page }) => {
+test('Insight - Search - Triggering No Results', async ({ page }) => {
     await test.step('Open the Insight Search tab', async () => {
         await openInsightSearchTab(page);
     });
@@ -873,6 +1079,127 @@ test('Insight - Search No Results', async ({ page }) => {
         await getSearchTextbox(page).fill('zzqvnomatchwithers2026');
         await applySearchFilters(page);
         await expect(getSearchNoResultsMessage(page), 'A deliberately impossible Search term should show the accepted no-results message').toBeVisible();
+    });
+});
+
+test('Insight - Sample Articles - Keep Their Expected Metadata and Page Elements', async ({ page }) => {
+    test.setTimeout(12 * 60 * 1000);
+
+    const traverseInsightSamples = async (samples, scenarioLabel, returnUrlPattern) => {
+        for (const sample of samples) {
+            await test.step(`${scenarioLabel} sample ${sample.index}: ${sample.title}`, async () => {
+                if (sample.requiredVisibleCardCount > 1) {
+                    await revealInsightCardsToCount(page, sample.requiredVisibleCardCount, scenarioLabel);
+                }
+
+                const visibleCards = await getInsightArticleCards(page);
+                const visibleCard = visibleCards[sample.index - 1];
+                expect(visibleCard, `${scenarioLabel} should keep the sampled card index ${sample.index} visible before opening ${sample.title}`).toBeTruthy();
+                expect(visibleCard.path, `${scenarioLabel} should keep ${sample.title} at the expected card index before opening it`).toBe(sample.path);
+
+                const articleLink = page.locator('.articleCard h3 a[href]').nth(sample.index - 1);
+
+                await expect(articleLink, `${scenarioLabel} should keep the sampled article card visible before opening ${sample.title}`).toBeVisible();
+                await expect.poll(async () => normalizeInsightPath(await articleLink.getAttribute('href') || ''), {
+                    message: `${scenarioLabel} should keep ${sample.title} linked to the expected Insight article route`,
+                    timeout: 5000,
+                }).toBe(sample.path);
+
+                if (sample.date) {
+                    expect(visibleCard.date, `${scenarioLabel} should keep the sampled card date visible before opening ${sample.title}`).toMatch(new RegExp(`^${escapeRegExp(sample.date)}$`, 'i'));
+                }
+
+                await clickWithCookieGuard(page, articleLink);
+                await assertInsightArticlePage(page, sample, scenarioLabel);
+
+                await page.goBack({ waitUntil: 'domcontentloaded' });
+                await page.waitForLoadState('load');
+                await dismissCookieOverlayIfPresent(page);
+                await expect(page, `${scenarioLabel} should return to the sampled Insight tab after one browser back action`).toHaveURL(returnUrlPattern);
+            });
+        }
+    };
+
+    await test.step('Traverse the Featured Insight hero article', async () => {
+        await openInsightLandingPage(page);
+
+        const featuredSample = await getFeaturedInsightSample(page);
+        const readMoreLink = page.getByRole('link', { name: 'READ MORE' }).first();
+        await expect.poll(async () => normalizeInsightPath(await readMoreLink.getAttribute('href') || ''), {
+            message: 'The Featured Insight hero should keep the READ MORE CTA linked to the lead article',
+            timeout: 5000,
+        }).toBe(featuredSample.path);
+
+        await clickWithCookieGuard(page, readMoreLink);
+        await assertInsightArticlePage(page, featuredSample, 'The Featured Insight hero article');
+
+        await page.goBack({ waitUntil: 'domcontentloaded' });
+        await page.waitForLoadState('load');
+        await dismissCookieOverlayIfPresent(page);
+        await expect(page, 'The Featured Insight traversal should return to the base Insight page after one browser back action').toHaveURL(/\/insight$/i);
+    });
+
+    const tabbedSamplingPlan = [
+        { tabLabel: 'Latest', expectedMinimumCount: 12 },
+        { tabLabel: 'Read', expectedMinimumCount: 12 },
+        { tabLabel: 'Listen', expectedMinimumCount: 12 },
+        { tabLabel: 'Watch', expectedMinimumCount: 12 },
+        { tabLabel: 'Events', expectedMinimumCount: 1, sampleIndexes: [0] },
+    ];
+
+    for (const plan of tabbedSamplingPlan) {
+        await test.step(`Traverse sampled Insight cards from the ${plan.tabLabel} tab`, async () => {
+            await openInsightTab(page, plan.tabLabel);
+
+            let cards = await getInsightArticleCards(page);
+            expect(cards.length, `The ${plan.tabLabel} tab should expose enough cards for the requested sampling flow`).toBeGreaterThanOrEqual(plan.expectedMinimumCount);
+
+            if (!plan.sampleIndexes) {
+                cards = await revealInsightCardsToCount(page, 13, `The ${plan.tabLabel} tab`);
+            }
+
+            const sampleIndexes = plan.sampleIndexes || [2, 11, 12];
+            const samples = sampleIndexes.map((index) => {
+                const card = cards[index];
+                expect(card, `The ${plan.tabLabel} tab should expose the sampled card position ${index + 1}`).toBeTruthy();
+
+                return {
+                    ...card,
+                    requiredVisibleCardCount: Math.max(index + 1, 1),
+                };
+            });
+
+            await traverseInsightSamples(samples, `The ${plan.tabLabel} tab`, getInsightTabUrlPattern(plan.tabLabel));
+        });
+    }
+
+    await test.step('Apply only the UK free-text Search filter and traverse the filtered Insight results', async () => {
+        await openInsightTab(page, 'Search');
+
+        await getSearchTextbox(page).fill('UK');
+        await applySearchFilters(page);
+
+        const noResultsMessage = getSearchNoResultsMessage(page);
+        if (await noResultsMessage.isVisible().catch(() => false)) {
+            await expect(noResultsMessage, 'The UK free-text Search filter should continue returning filtered Insight results on the live UAT environment').not.toBeVisible();
+            return;
+        }
+
+        let filteredCards = await getInsightArticleCards(page);
+        expect(filteredCards.length, 'The UK free-text Search filter should expose at least the first 12 cards for the requested sampling flow').toBeGreaterThanOrEqual(12);
+
+        filteredCards = await revealInsightCardsToCount(page, 13, 'The filtered Search results');
+
+        const filteredSamples = [filteredCards[0], filteredCards[11], filteredCards[12]].map((card, index) => {
+            expect(card, `The filtered Search results should expose the requested sampled card ${index === 0 ? 1 : index === 1 ? 12 : 13}`).toBeTruthy();
+
+            return {
+                ...card,
+                requiredVisibleCardCount: index === 0 ? 1 : index === 1 ? 12 : 13,
+            };
+        });
+
+        await traverseInsightSamples(filteredSamples, 'The filtered Search results', /\/insight\?tab=search(?:&.*)?$/i);
     });
 });
 
