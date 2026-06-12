@@ -2,11 +2,44 @@ const { test, expect } = require('@playwright/test');
 
 // Cookie Selector (If there is one)
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
+const COOKIE_OVERLAY_SELECTOR = '#CybotCookiebotDialogBodyUnderlay, #CybotCookiebotDialog, #onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-consent-sdk';
+
+async function dismissCookieOverlayIfPresent(page) {
+    const cookieOverlay = page.locator(COOKIE_OVERLAY_SELECTOR).first();
+    const acceptAllButton = page.locator([
+        '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
+        '#CybotCookiebotDialogBodyButtonAccept',
+        '#onetrust-accept-btn-handler',
+        'button:has-text("Accept all cookies")',
+        'button:has-text("Accept all")',
+        'button:has-text("Accept")',
+    ].join(', ')).first();
+    const essentialOnlyButton = page.locator('button:has-text("Essential cookies only")').first();
+
+    const overlayVisible = await cookieOverlay.isVisible().catch(() => false);
+    const acceptVisible = await acceptAllButton.isVisible().catch(() => false);
+    const essentialVisible = await essentialOnlyButton.isVisible().catch(() => false);
+
+    if (!overlayVisible && !acceptVisible && !essentialVisible) {
+        return;
+    }
+
+    if (acceptVisible) {
+        await acceptAllButton.click({ timeout: 3000 }).catch(() => { });
+    } else if (essentialVisible) {
+        await essentialOnlyButton.click({ timeout: 3000 }).catch(() => { });
+    }
+
+    await expect(cookieOverlay).not.toBeVisible({ timeout: 10000 }).catch(() => { });
+}
+
 async function acceptCookiesIfPresent(page) {
     const cookieButton = page.locator(COOKIE_ACCEPT_SELECTOR);
     if (await cookieButton.first().isVisible().catch(() => false)) {
         await cookieButton.first().click();
     }
+
+    await dismissCookieOverlayIfPresent(page);
 }
 
 function escapeRegExp(text) {
@@ -16,7 +49,25 @@ function escapeRegExp(text) {
 async function openMenuIfPresent(page) {
     const openMenuButton = page.getByRole('button', { name: 'Open menu' });
     if (await openMenuButton.isVisible().catch(() => false)) {
-        await openMenuButton.click();
+        await clickWithCookieGuard(page, openMenuButton);
+    }
+}
+
+async function clickWithCookieGuard(page, locator) {
+    await dismissCookieOverlayIfPresent(page);
+
+    try {
+        await locator.click();
+    } catch (error) {
+        const message = String(error || '').toLowerCase();
+        const isCookieInterception = message.includes('intercepts pointer events') || message.includes('cybot') || message.includes('onetrust');
+
+        if (!isCookieInterception) {
+            throw error;
+        }
+
+        await dismissCookieOverlayIfPresent(page);
+        await locator.click({ force: true });
     }
 }
 
@@ -114,44 +165,48 @@ test('Meganav - Navigate to Second Level', async ({ page, baseURL }) => {
 
     await test.step('Navigate to Residential mortgages from Mortgages', async () => {
         await clickVisibleNavLink(page, 'Mortgages');
-        await page.getByRole('link', { name: 'Mortgage products', exact: true }).click();
-        await page.getByRole('link', { name: 'Residential mortgages', exact: true }).click();
+        await clickWithCookieGuard(page, page.getByRole('link', { name: 'Mortgage products', exact: true }));
+        await clickWithCookieGuard(page, page.getByRole('link', { name: 'Residential mortgages', exact: true }));
         await expect(page, 'Residential mortgages link should navigate to the mortgage products page').toHaveURL(`${baseURL}home/mortgages/mortgage-products`);
         await page.goBack({ waitUntil: 'domcontentloaded' });
+        await acceptCookiesIfPresent(page);
         await openMenuIfPresent(page);
     });
 
     await test.step('Navigate to Mortgages home from Choosing a mortgage', async () => {
         await clickVisibleNavLink(page, 'Mortgages');
-        await page.getByRole('link', { name: 'Choosing a mortgage', exact: true }).click();
-        await page.getByLabel('Choosing a mortgage').getByRole('link', { name: 'Mortgages home' }).click();
+        await clickWithCookieGuard(page, page.getByRole('link', { name: 'Choosing a mortgage', exact: true }));
+        await clickWithCookieGuard(page, page.getByLabel('Choosing a mortgage').getByRole('link', { name: 'Mortgages home' }));
         await expect(page, 'Mortgages home link should navigate back to the main mortgages page').toHaveURL(`${baseURL}home/mortgages`);
         await page.goBack({ waitUntil: 'domcontentloaded' });
+        await acceptCookiesIfPresent(page);
         await openMenuIfPresent(page);
     });
 
     await test.step('Navigate to Savings support from Savings', async () => {
         await clickVisibleNavLink(page, 'Savings');
-        await page.getByRole('link', { name: 'Need help with savings', exact: true }).click();
-        await page.getByLabel('Need help with savings').getByRole('link', { name: 'Savings support', exact: true }).click();
+        await clickWithCookieGuard(page, page.getByRole('link', { name: 'Need help with savings', exact: true }));
+        await clickWithCookieGuard(page, page.getByLabel('Need help with savings').getByRole('link', { name: 'Savings support', exact: true }));
         await expect(page, 'Savings support link should navigate to the savings support page').toHaveURL(`${baseURL}home/contact-us/help-and-support/savings-support`);
         await page.goBack({ waitUntil: 'domcontentloaded' });
+        await acceptCookiesIfPresent(page);
         await openMenuIfPresent(page);
     });
 
     await test.step('Navigate to Closing an account from Help and support', async () => {
         await clickVisibleNavLink(page, 'Help and support');
-        await page.getByRole('link', { name: 'Difficult times', exact: true }).click();
-        await page.getByLabel('Difficult times').getByRole('link', { name: 'Closing an account', exact: true }).click();
+        await clickWithCookieGuard(page, page.getByRole('link', { name: 'Difficult times', exact: true }));
+        await clickWithCookieGuard(page, page.getByLabel('Difficult times').getByRole('link', { name: 'Closing an account', exact: true }));
         await expect(page, 'Closing an account link should navigate to the bereavement support page').toHaveURL(`${baseURL}home/contact-us/help-and-support/closing-an-account-after-someone-dies`);
         await page.goBack({ waitUntil: 'domcontentloaded' });
+        await acceptCookiesIfPresent(page);
         await openMenuIfPresent(page);
     });
 
     await test.step('Navigate to Building a fairer society from About us', async () => {
         await clickVisibleNavLink(page, 'About us');
-        await page.getByRole('link', { name: 'Our impact', exact: true }).click();
-        await page.getByRole('link', { name: 'Building a fairer society', exact: true }).click();
+        await clickWithCookieGuard(page, page.getByRole('link', { name: 'Our impact', exact: true }));
+        await clickWithCookieGuard(page, page.getByRole('link', { name: 'Building a fairer society', exact: true }));
         await expect(page, 'Building a fairer society link should navigate to the about-us impact page').toHaveURL(`${baseURL}home/about-us/building-a-fairer-society`);
         await page.goBack({ waitUntil: 'domcontentloaded' });
     });

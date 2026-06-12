@@ -1,3 +1,4 @@
 {
-  "careers-recruitment-enquiries": 2
+  "careers-recruitment-enquiries": 2,
+  "contact-us": 6
 }

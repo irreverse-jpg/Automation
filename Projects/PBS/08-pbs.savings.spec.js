@@ -3,12 +3,79 @@ const { test, expect } = require('@playwright/test');
 const SAVINGS_URL = '/home/savings/savings-accounts';
 const COOKIE_ACCEPT_SELECTOR =
     'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
+const COOKIE_OVERLAY_SELECTOR =
+    '#CybotCookiebotDialogBodyUnderlay, #CybotCookiebotDialog, #onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-consent-sdk';
+
+async function dismissCookieOverlayIfPresent(page) {
+    const cookieOverlay = page.locator(COOKIE_OVERLAY_SELECTOR).first();
+    const acceptAllButton = page.locator([
+        '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
+        '#CybotCookiebotDialogBodyButtonAccept',
+        '#onetrust-accept-btn-handler',
+        'button:has-text("Accept all cookies")',
+        'button:has-text("Accept all")',
+        'button:has-text("Accept")',
+    ].join(', ')).first();
+    const essentialOnlyButton = page.locator('button:has-text("Essential cookies only")').first();
+
+    const overlayVisible = await cookieOverlay.isVisible().catch(() => false);
+    const acceptVisible = await acceptAllButton.isVisible().catch(() => false);
+    const essentialVisible = await essentialOnlyButton.isVisible().catch(() => false);
+
+    if (!overlayVisible && !acceptVisible && !essentialVisible) {
+        return;
+    }
+
+    if (acceptVisible) {
+        await acceptAllButton.click({ timeout: 3000 }).catch(() => { });
+    } else if (essentialVisible) {
+        await essentialOnlyButton.click({ timeout: 3000 }).catch(() => { });
+    }
+
+    await expect(cookieOverlay).not.toBeVisible({ timeout: 10000 }).catch(() => { });
+}
+
+async function clickWithCookieGuard(page, locator) {
+    await dismissCookieOverlayIfPresent(page);
+
+    try {
+        await locator.click();
+    } catch (error) {
+        const message = String(error || '').toLowerCase();
+        const isCookieInterception = message.includes('intercepts pointer events') || message.includes('cybot') || message.includes('onetrust');
+
+        if (!isCookieInterception) {
+            throw error;
+        }
+
+        await dismissCookieOverlayIfPresent(page);
+        await locator.click({ force: true });
+    }
+}
 
 async function acceptCookiesIfPresent(page) {
     const cookieButton = page.locator(COOKIE_ACCEPT_SELECTOR).first();
     if (await cookieButton.isVisible().catch(() => false)) {
-        await cookieButton.click();
+        await clickWithCookieGuard(page, cookieButton).catch(() => { });
     }
+
+    await dismissCookieOverlayIfPresent(page);
+}
+
+async function expectSavingsAccountsPageChrome(page) {
+    await expect(page, 'Savings accounts page should load the expected title').toHaveTitle(/Compare Savings accounts and ISAs/i);
+
+    const pageHeading = page.getByRole('heading', { level: 1, name: /^Compare savings accounts$/i });
+    await expect(pageHeading, 'Savings accounts page should show the Compare savings accounts H1').toBeVisible();
+
+    const breadcrumbNav = page.locator('nav[aria-label*="breadcrumb" i], nav[aria-label*="Breadcrumb" i], [aria-label*="breadcrumb" i]').first();
+    await expect(breadcrumbNav, 'Savings accounts page should expose a breadcrumb trail').toBeVisible();
+
+    const parentBreadcrumb = breadcrumbNav.getByRole('link', { name: /^Savings$/i }).first();
+    await expect(parentBreadcrumb, 'Savings accounts breadcrumb should include Savings as the previous level').toBeVisible();
+
+    const currentBreadcrumb = breadcrumbNav.getByText(/^Compare all savings accounts$/i).first();
+    await expect(currentBreadcrumb, 'Savings accounts breadcrumb should show Compare all savings accounts as the current level').toBeVisible();
 }
 
 async function clickFilterLabelInScrollableContainer(page, {
@@ -19,7 +86,7 @@ async function clickFilterLabelInScrollableContainer(page, {
     if (!(await container.isVisible().catch(() => false))) {
         const mobileFilterOpener = page.locator('#filters-opener');
         if (await mobileFilterOpener.isVisible().catch(() => false)) {
-            await mobileFilterOpener.click();
+            await clickWithCookieGuard(page, mobileFilterOpener);
         }
     }
 
@@ -64,7 +131,7 @@ async function clickFilterLabelInScrollableContainer(page, {
 
     const showResultsButton = page.locator('#show-results');
     if (await showResultsButton.isVisible().catch(() => false)) {
-        await showResultsButton.click();
+        await clickWithCookieGuard(page, showResultsButton);
         await page.waitForLoadState('networkidle');
     }
 }
@@ -183,10 +250,11 @@ async function readOpeningDepositValuesInVisualOrder(page) {
     });
 }
 
-test('Savings Accounts - Verify Calculator is Present', async ({ page }) => {
+test('Savings Accounts - Initial Page Load Checks', async ({ page }) => {
     await test.step('Open the savings accounts page', async () => {
         await page.goto(SAVINGS_URL, { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectSavingsAccountsPageChrome(page);
     });
 
     await test.step('Verify the savings results heading', async () => {
@@ -204,6 +272,7 @@ test('Savings Accounts - No Results Scenario', async ({ page }) => {
     await test.step('Open the savings accounts page', async () => {
         await page.goto(SAVINGS_URL, { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectSavingsAccountsPageChrome(page);
     });
 
     await test.step('Apply contradictory savings filters', async () => {
@@ -223,7 +292,7 @@ test('Savings Accounts - No Results Scenario', async ({ page }) => {
 
             const viewAllCta = page.getByRole('button', { name: 'View all savings accounts' });
             await expect(viewAllCta, 'Savings no-results state should offer a View all savings accounts CTA').toBeVisible();
-            await viewAllCta.click();
+            await clickWithCookieGuard(page, viewAllCta);
             await page.waitForLoadState('networkidle');
 
             await expect(noResultsMessage, 'Resetting the savings filters should remove the no-results message').not.toBeVisible();
@@ -251,6 +320,7 @@ test('Savings Accounts - Filter and Sorting Results', async ({ page }) => {
     await test.step('Open the savings accounts page', async () => {
         await page.goto(SAVINGS_URL, { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectSavingsAccountsPageChrome(page);
     });
 
     await test.step('Apply savings filters', async () => {
@@ -299,6 +369,7 @@ test('Savings Accounts - Access a Savings product Details Page', async ({ page }
     await test.step('Open the savings accounts page', async () => {
         await page.goto(SAVINGS_URL, { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectSavingsAccountsPageChrome(page);
     });
 
     await test.step('Open the first savings product details page', async () => {
@@ -311,7 +382,7 @@ test('Savings Accounts - Access a Savings product Details Page', async ({ page }
             return (heading?.textContent || '').replace(/\s+/g, ' ').trim();
         });
 
-        await firstMoreInfoLink.click();
+        await clickWithCookieGuard(page, firstMoreInfoLink);
         await page.waitForLoadState('networkidle');
 
         const productH1 = page.getByRole('heading', { level: 1 });
@@ -325,6 +396,7 @@ test('Savings Accounts - Access a Savings Product Details Page After Filters and
     await test.step('Open filtered and sorted savings results', async () => {
         await page.goto(SAVINGS_URL, { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectSavingsAccountsPageChrome(page);
 
         await clickFilterLabelInScrollableContainer(page, { labelPrefix: 'ISA' });
         await clickFilterLabelInScrollableContainer(page, { labelPrefix: 'One lump sum' });
@@ -346,7 +418,7 @@ test('Savings Accounts - Access a Savings Product Details Page After Filters and
             return (heading?.textContent || '').replace(/\s+/g, ' ').trim();
         });
 
-        await firstMoreInfoLink.click();
+        await clickWithCookieGuard(page, firstMoreInfoLink);
         await page.waitForLoadState('networkidle');
 
         const productH1 = page.getByRole('heading', { level: 1 });

@@ -9,6 +9,10 @@
             "path": "Withers"
         },
         {
+            "name": "CareUK",
+            "path": "CareUK"
+        },
+        {
             "name": "Shared",
             "path": "../Shared"
         }

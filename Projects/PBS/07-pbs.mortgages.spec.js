@@ -2,11 +2,78 @@ const { test, expect } = require('@playwright/test');
 
 // Cookie Selector (If there is one)
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
+const COOKIE_OVERLAY_SELECTOR = '#CybotCookiebotDialogBodyUnderlay, #CybotCookiebotDialog, #onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-consent-sdk';
+
+async function dismissCookieOverlayIfPresent(page) {
+    const cookieOverlay = page.locator(COOKIE_OVERLAY_SELECTOR).first();
+    const acceptAllButton = page.locator([
+        '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
+        '#CybotCookiebotDialogBodyButtonAccept',
+        '#onetrust-accept-btn-handler',
+        'button:has-text("Accept all cookies")',
+        'button:has-text("Accept all")',
+        'button:has-text("Accept")',
+    ].join(', ')).first();
+    const essentialOnlyButton = page.locator('button:has-text("Essential cookies only")').first();
+
+    const overlayVisible = await cookieOverlay.isVisible().catch(() => false);
+    const acceptVisible = await acceptAllButton.isVisible().catch(() => false);
+    const essentialVisible = await essentialOnlyButton.isVisible().catch(() => false);
+
+    if (!overlayVisible && !acceptVisible && !essentialVisible) {
+        return;
+    }
+
+    if (acceptVisible) {
+        await acceptAllButton.click({ timeout: 3000 }).catch(() => { });
+    } else if (essentialVisible) {
+        await essentialOnlyButton.click({ timeout: 3000 }).catch(() => { });
+    }
+
+    await expect(cookieOverlay).not.toBeVisible({ timeout: 10000 }).catch(() => { });
+}
+
+async function clickWithCookieGuard(page, locator) {
+    await dismissCookieOverlayIfPresent(page);
+
+    try {
+        await locator.click();
+    } catch (error) {
+        const message = String(error || '').toLowerCase();
+        const isCookieInterception = message.includes('intercepts pointer events') || message.includes('cybot') || message.includes('onetrust');
+
+        if (!isCookieInterception) {
+            throw error;
+        }
+
+        await dismissCookieOverlayIfPresent(page);
+        await locator.click({ force: true });
+    }
+}
+
 async function acceptCookiesIfPresent(page) {
     const cookieButton = page.locator(COOKIE_ACCEPT_SELECTOR);
     if (await cookieButton.first().isVisible().catch(() => false)) {
-        await cookieButton.first().click();
+        await clickWithCookieGuard(page, cookieButton.first()).catch(() => { });
     }
+
+    await dismissCookieOverlayIfPresent(page);
+}
+
+async function expectMortgageProductsPageChrome(page) {
+    await expect(page, 'Mortgage products page should load the expected title').toHaveTitle(/Compare Mortgage Rates and Deals/i);
+
+    const pageHeading = page.getByRole('heading', { level: 1, name: /^Mortgage products$/i });
+    await expect(pageHeading, 'Mortgage products page should show the Mortgage products H1').toBeVisible();
+
+    const breadcrumbNav = page.locator('nav[aria-label*="breadcrumb" i], nav[aria-label*="Breadcrumb" i], [aria-label*="breadcrumb" i]').first();
+    await expect(breadcrumbNav, 'Mortgage products page should expose a breadcrumb trail').toBeVisible();
+
+    const parentBreadcrumb = breadcrumbNav.getByRole('link', { name: /^Mortgages with Principality$/i }).first();
+    await expect(parentBreadcrumb, 'Mortgage products breadcrumb should include Mortgages with Principality as the previous level').toBeVisible();
+
+    const currentBreadcrumb = breadcrumbNav.getByText(/^Mortgage products$/i).first();
+    await expect(currentBreadcrumb, 'Mortgage products breadcrumb should show Mortgage products as the current level').toBeVisible();
 }
 
 async function fillMortgageSearchForm(page, {
@@ -27,7 +94,7 @@ async function fillMortgageSearchForm(page, {
 
     const updateSearchButton = page.getByRole('button', { name: /Update search/i });
     await expect(updateSearchButton, 'Mortgage calculator should expose an Update search button before submitting criteria').toBeVisible();
-    await updateSearchButton.click();
+    await clickWithCookieGuard(page, updateSearchButton);
 }
 
 async function clickFilterLabelInScrollableContainer(page, {
@@ -38,11 +105,11 @@ async function clickFilterLabelInScrollableContainer(page, {
     if (!(await container.isVisible().catch(() => false))) {
         const mobileFilterOpener = page.locator('#filters-opener');
         if (await mobileFilterOpener.isVisible().catch(() => false)) {
-            await mobileFilterOpener.click();
+            await clickWithCookieGuard(page, mobileFilterOpener);
         } else {
             const filterToggle = page.getByRole('button', { name: /filter by|\(\d+\)\s*filter by/i }).first();
             if (await filterToggle.isVisible().catch(() => false)) {
-                await filterToggle.click();
+                await clickWithCookieGuard(page, filterToggle);
             }
         }
     }
@@ -74,7 +141,7 @@ async function clickFilterLabelInScrollableContainer(page, {
     // Tablet/mobile flow applies filters via explicit CTA
     const showResultsButton = page.locator('#show-results');
     if (await showResultsButton.isVisible().catch(() => false)) {
-        await showResultsButton.click();
+        await clickWithCookieGuard(page, showResultsButton);
         await page.waitForLoadState('networkidle');
     }
 }
@@ -94,15 +161,16 @@ async function openFiltersIfCollapsed(page) {
     if (!(await container.isVisible().catch(() => false))) {
         const opener = page.locator('#filters-opener');
         if (await opener.isVisible().catch(() => false)) {
-            await opener.click();
+            await clickWithCookieGuard(page, opener);
         }
     }
 }
 
-test('Mortgages - Verify Calculator is Present', async ({ page }) => {
+test('Mortgages - Initial Page Load Checks', async ({ page }) => {
     await test.step('Open the mortgage products page', async () => {
         await page.goto('/mortgages/mortgage-products', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectMortgageProductsPageChrome(page);
     });
 
     await test.step('Verify the mortgage calculator heading', async () => {
@@ -115,6 +183,7 @@ test('Mortgages - No Results Scenario', async ({ page }) => {
     await test.step('Open the mortgage products page', async () => {
         await page.goto('/mortgages/mortgage-products', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectMortgageProductsPageChrome(page);
     });
 
     await test.step('Submit mortgage criteria that should return no results', async () => {
@@ -131,7 +200,7 @@ test('Mortgages - No Results Scenario', async ({ page }) => {
 
         const updateSearchButton = page.getByRole('button', { name: /Update search/i });
         await expect(updateSearchButton, 'Mortgage calculator should expose Update search before submitting impossible criteria').toBeVisible();
-        await updateSearchButton.click();
+        await clickWithCookieGuard(page, updateSearchButton);
     });
 
     await test.step('Verify the no-results mortgage state', async () => {
@@ -144,6 +213,7 @@ test('Mortgages - Buy my first home scenario', async ({ page }) => {
     await test.step('Open the mortgage products page', async () => {
         await page.goto('/mortgages/mortgage-products', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectMortgageProductsPageChrome(page);
     });
 
     await test.step('Submit first-home mortgage criteria', async () => {
@@ -160,7 +230,7 @@ test('Mortgages - Buy my first home scenario', async ({ page }) => {
 
         const updateSearchButton = page.getByRole('button', { name: /Update search/i });
         await expect(updateSearchButton, 'Mortgage calculator should expose Update search for the first home scenario').toBeVisible();
-        await updateSearchButton.click();
+        await clickWithCookieGuard(page, updateSearchButton);
     });
 
     await test.step('Verify the first-home mortgage results', async () => {
@@ -172,6 +242,7 @@ test('Mortgages - Remortgage scenario', async ({ page }) => {
     await test.step('Open the mortgage products page', async () => {
         await page.goto('/mortgages/mortgage-products', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectMortgageProductsPageChrome(page);
     });
 
     await test.step('Submit remortgage criteria', async () => {
@@ -188,7 +259,7 @@ test('Mortgages - Remortgage scenario', async ({ page }) => {
 
         const updateSearchButton = page.getByRole('button', { name: /Update search/i });
         await expect(updateSearchButton, 'Mortgage calculator should expose Update search for the remortgage scenario').toBeVisible();
-        await updateSearchButton.click();
+        await clickWithCookieGuard(page, updateSearchButton);
     });
 
     await test.step('Verify the remortgage results', async () => {
@@ -200,13 +271,14 @@ test('Mortgages - Move home scenario', async ({ page }) => {
     await test.step('Open the mortgage products page', async () => {
         await page.goto('/mortgages/mortgage-products', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectMortgageProductsPageChrome(page);
     });
 
     await test.step('Submit move-home mortgage criteria', async () => {
         await page.getByLabel("I'm looking to").selectOption({ label: 'Move home' });
 
         const propertyValueField = page.getByLabel('Property value');
-        await propertyValueField.fill('600000');
+        await propertyValueField.fill('400000');
 
         const depositField = page.getByLabel('Deposit');
         await depositField.waitFor({ state: 'visible', timeout: 5000 });
@@ -216,7 +288,7 @@ test('Mortgages - Move home scenario', async ({ page }) => {
 
         const updateSearchButton = page.getByRole('button', { name: /Update search/i });
         await expect(updateSearchButton, 'Mortgage calculator should expose Update search for the move home scenario').toBeVisible();
-        await updateSearchButton.click();
+        await clickWithCookieGuard(page, updateSearchButton);
     });
 
     await test.step('Verify the move-home results', async () => {
@@ -234,6 +306,7 @@ test('Mortgages - Filter and Sorting Results', async ({ page }) => {
     await test.step('Open the mortgage products page and run the base search', async () => {
         await page.goto('/mortgages/mortgage-products', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectMortgageProductsPageChrome(page);
 
         await fillMortgageSearchForm(page, {
             lookingTo: 'Buy my first home',
@@ -401,7 +474,7 @@ test('Mortgages - Filter and Sorting Results', async ({ page }) => {
         await openFiltersIfCollapsed(page);
         const clearAllButton = page.getByRole('button', { name: 'Clear all' });
         await expect(clearAllButton, 'Mortgage filters should expose a Clear all button after filters are applied').toBeVisible();
-        await clearAllButton.click();
+        await clickWithCookieGuard(page, clearAllButton);
         await page.waitForLoadState('networkidle');
 
         await expect(page.getByRole('checkbox', { name: /^Fixed/i }), 'Fixed filter should be unchecked after clearing all filters').not.toBeChecked();
@@ -416,6 +489,7 @@ test('Mortgages - Access and Navigate a Mortgage Product Details Page', async ({
     await test.step('Open mortgage results for a first-home search', async () => {
         await page.goto('/mortgages/mortgage-products', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectMortgageProductsPageChrome(page);
         await fillMortgageSearchForm(page, {
             lookingTo: 'Buy my first home',
             propertyValue: 250000,
@@ -435,7 +509,7 @@ test('Mortgages - Access and Navigate a Mortgage Product Details Page', async ({
 
         const firstProductDetailsLink = firstProductCard.getByRole('link', { name: /See full details/i });
         await expect(firstProductDetailsLink, 'The first mortgage result should expose a See full details link').toBeVisible();
-        await firstProductDetailsLink.click();
+        await clickWithCookieGuard(page, firstProductDetailsLink);
         await page.waitForLoadState('networkidle');
 
         await expect(productH1, 'Mortgage product details page should show an H1 heading').toBeVisible();
@@ -457,7 +531,7 @@ test('Mortgages - Access and Navigate a Mortgage Product Details Page', async ({
             const href = await pillLink.getAttribute('href');
             const previousHash = new URL(page.url()).hash;
 
-            await pillLink.click();
+            await clickWithCookieGuard(page, pillLink);
 
             await expect.poll(() => new URL(page.url()).hash, {
                 timeout: 10000,
@@ -488,20 +562,20 @@ test('Mortgages - Access and Navigate a Mortgage Product Details Page', async ({
         for (const accordionButton of detailedInfoAccordionButtons) {
             await expect(accordionButton, 'Mortgage detailed information accordion button should be visible before expanding').toBeVisible();
             await accordionButton.scrollIntoViewIfNeeded();
-            await accordionButton.click();
+            await clickWithCookieGuard(page, accordionButton);
         }
 
         for (const accordionButton of detailedInfoAccordionButtons) {
             await expect(accordionButton, 'Mortgage detailed information accordion button should remain visible before collapsing').toBeVisible();
             await accordionButton.scrollIntoViewIfNeeded();
-            await accordionButton.click();
+            await clickWithCookieGuard(page, accordionButton);
         }
     });
 
     await test.step('Navigate to the mortgage enquiry form and back', async () => {
         const makeAnEnquiryCta = page.locator('#section-mortgage').getByRole('link', { name: 'Make an enquiry' });
         await expect(makeAnEnquiryCta, 'Mortgage product details should show the Make an enquiry CTA').toBeVisible();
-        await makeAnEnquiryCta.click();
+        await clickWithCookieGuard(page, makeAnEnquiryCta);
 
         await expect(page, 'Make an enquiry CTA should navigate to the mortgage enquiry form').toHaveURL(/\/home\/mortgages\/mortgage-enquiry-form/i);
         await expect(page.getByRole('heading', { name: /Mortgage enquiry form/i }), 'Mortgage enquiry form page should show its heading after navigation from product details').toBeVisible();
@@ -519,6 +593,7 @@ test('Mortgages - Access a Mortgage Product Details Page After Filters and Sorti
     await test.step('Open filtered and sorted mortgage results', async () => {
         await page.goto('/mortgages/mortgage-products', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectMortgageProductsPageChrome(page);
         await fillMortgageSearchForm(page, {
             lookingTo: 'Buy my first home',
             propertyValue: 250000,
@@ -550,7 +625,7 @@ test('Mortgages - Access a Mortgage Product Details Page After Filters and Sorti
         const firstProductName = (await firstProductCard.getByRole('heading', { level: 2 }).innerText()).trim();
         const firstProductDetailsLink = firstProductCard.getByRole('link', { name: /See full details/i });
         await expect(firstProductDetailsLink, 'Filtered mortgage result should expose a See full details link').toBeVisible();
-        await firstProductDetailsLink.click();
+        await clickWithCookieGuard(page, firstProductDetailsLink);
         await page.waitForLoadState('networkidle');
 
         const productH1 = page.getByRole('heading', { level: 1 });

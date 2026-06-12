@@ -139,6 +139,52 @@ async function expectAccordionIndicatorState(button, expanded, description) {
     await expect(button, `${description} should show the collapsed plus-state styling once closed`).toHaveClass(/\bcollapsed\b/);
 }
 
+async function setAccordionExpandedState(page, button, expanded, description) {
+    const expectedValue = expanded ? 'true' : 'false';
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        await dismissCookieOverlayIfPresent(page);
+        await button.scrollIntoViewIfNeeded().catch(() => { });
+
+        if ((await button.getAttribute('aria-expanded')) === expectedValue) {
+            await expectAccordionIndicatorState(button, expanded, description);
+            return;
+        }
+
+        try {
+            await clickWithCookieGuard(page, button);
+        } catch (error) {
+            const message = String(error || '').toLowerCase();
+            const isTransientInteractionError = message.includes('timeout')
+                || message.includes('not stable')
+                || message.includes('intercepts pointer events')
+                || message.includes('onetrust');
+
+            if (!isTransientInteractionError) {
+                throw error;
+            }
+
+            await button.click({ force: true }).catch(async () => {
+                await button.evaluate((node) => node.click());
+            });
+        }
+
+        const stateReached = await expect.poll(async () => {
+            return await button.getAttribute('aria-expanded');
+        }, {
+            message: `${description} should toggle to the expected state after interaction`,
+            timeout: 5000,
+        }).toBe(expectedValue).then(() => true).catch(() => false);
+
+        if (stateReached) {
+            await expectAccordionIndicatorState(button, expanded, description);
+            return;
+        }
+    }
+
+    await expectAccordionIndicatorState(button, expanded, description);
+}
+
 function getShapingSection(page) {
     return page.locator('section.featureVideo').first();
 }
@@ -714,19 +760,13 @@ test('About - Pages In This Section - Links Hover and Further Information Accord
         await expect(accordionButton, 'The About page should show the Further information accordion control').toBeVisible();
         const accordionPanel = await getAccordionPanel(page, accordionButton);
 
-        if ((await accordionButton.getAttribute('aria-expanded')) === 'true') {
-            await clickWithCookieGuard(page, accordionButton);
-        }
-
-        await expectAccordionIndicatorState(accordionButton, false, 'The Further information accordion');
+        await setAccordionExpandedState(page, accordionButton, false, 'The Further information accordion');
         await expect(accordionPanel, 'The Further information accordion panel should be hidden in its collapsed state').not.toBeVisible();
 
-        await clickWithCookieGuard(page, accordionButton);
-        await expectAccordionIndicatorState(accordionButton, true, 'The Further information accordion');
+        await setAccordionExpandedState(page, accordionButton, true, 'The Further information accordion');
         await expect(accordionPanel, 'The Further information accordion panel should become visible once expanded').toBeVisible();
 
-        await clickWithCookieGuard(page, accordionButton);
-        await expectAccordionIndicatorState(accordionButton, false, 'The Further information accordion');
+        await setAccordionExpandedState(page, accordionButton, false, 'The Further information accordion');
         await expect(accordionPanel, 'The Further information accordion panel should collapse again when clicked a second time').not.toBeVisible();
     });
 }, 30000);

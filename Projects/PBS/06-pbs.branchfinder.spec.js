@@ -9,15 +9,30 @@ async function acceptCookiesIfPresent(page) {
     }
 }
 
-test('Branch Finder - Verify Branch Finder is Present', async ({ page }) => {
+async function expectBranchFinderPageChrome(page) {
+    await expect(page, 'Branch finder page should load the expected page title').toHaveTitle(/Find Your Nearest Branch/i);
+
+    const branchFinderHeading = page.getByRole('heading', { level: 1, name: /Branch Finder/i });
+    await expect(branchFinderHeading, 'Branch finder page should show the Branch Finder H1').toBeVisible();
+
+    const breadcrumbNav = page.locator('nav[aria-label*="breadcrumb" i], nav[aria-label*="Breadcrumb" i], [aria-label*="breadcrumb" i]').first();
+    await expect(breadcrumbNav, 'Branch finder page should expose a breadcrumb trail').toBeVisible();
+
+    const contactUsBreadcrumb = breadcrumbNav.getByRole('link', { name: /Contact us/i }).first();
+    await expect(contactUsBreadcrumb, 'Branch finder breadcrumb should include Contact us as the previous level').toBeVisible();
+
+    const currentBreadcrumb = breadcrumbNav.getByText(/^Branch Finder$/i).first();
+    await expect(currentBreadcrumb, 'Branch finder breadcrumb should show Branch Finder as the current level').toBeVisible();
+}
+
+test('Branch Finder - Initial Page Load Checks', async ({ page }) => {
     await test.step('Open the branch finder page', async () => {
         await page.goto('/home/contact-us/branch-finder', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
     });
 
-    await test.step('Verify the branch finder heading', async () => {
-        const branchFinderHeading = page.getByRole('heading', { level: 1, name: 'Branch finder' });
-        await expect(branchFinderHeading, 'Branch finder page should show the Branch finder heading').toBeVisible();
+    await test.step('Verify the title, H1, and breadcrumb trail', async () => {
+        await expectBranchFinderPageChrome(page);
     });
 });
 
@@ -25,6 +40,7 @@ test('Branch Finder - Use Branch Finder Search Functionality', async ({ page }) 
     await test.step('Open the branch finder page', async () => {
         await page.goto('/home/contact-us/branch-finder', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectBranchFinderPageChrome(page);
     });
 
     await test.step('Search branch finder for Cardiff', async () => {
@@ -40,6 +56,7 @@ test('Branch Finder - Select a Branch from the Search Results', async ({ page })
     await test.step('Open the branch finder page', async () => {
         await page.goto('/home/contact-us/branch-finder', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectBranchFinderPageChrome(page);
     });
 
     await test.step('Search branch finder for Cardiff', async () => {
@@ -66,6 +83,7 @@ test('Branch Finder - Shows empty results list for invalid search', async ({ pag
     await test.step('Open the branch finder page', async () => {
         await page.goto('/home/contact-us/branch-finder', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+        await expectBranchFinderPageChrome(page);
     });
 
     await test.step('Search branch finder with an invalid location', async () => {

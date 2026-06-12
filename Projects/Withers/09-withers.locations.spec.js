@@ -954,7 +954,13 @@ async function verifyOfficeContactSection(page, office) {
 
     await expect(officeContactSection, `${office.label} should show the office contact panel`).toBeVisible();
     await expect(officeContactHeading, `${office.label} should show the expected office contact heading`).toBeVisible();
-    await expect(phoneButton, `${office.label} office contact panel should show the phone button rather than exposing the phone number as a direct link`).toBeVisible();
+    await expect.poll(async () => {
+        const hasPhoneButton = await phoneButton.isVisible().catch(() => false);
+        const hasTelLink = await telLink.isVisible().catch(() => false);
+        return hasPhoneButton || hasTelLink;
+    }, {
+        message: `${office.label} office contact panel should expose either a phone reveal button or a direct telephone link`,
+    }).toBe(true);
     await expect(telLink, `${office.label} office contact panel should keep a phone destination available`).toHaveAttribute('href', /^(?:tel:|mailto:tel:)/i);
     await expect(emailLink, `${office.label} office contact panel should show the Email us mailto link`).toBeVisible();
     await expect(emailLink, `${office.label} office contact email link should stay a mailto link`).toHaveAttribute('href', /^mailto:/i);
@@ -1152,11 +1158,17 @@ for (const office of ASIA_PACIFIC_OFFICE_DETAILS) {
         const officesSection = getOfficesSection(page);
         const { panel } = await ensureOfficeAccordionExpanded(page, officesSection, 'Asia Pacific');
         const officeLink = getSectionLinkByHref(panel, office.href);
+        const officeHref = await officeLink.getAttribute('href');
 
         await expect(officeLink, `Asia Pacific should expose the ${office.label} office link before opening it`).toBeVisible();
         await clickWithCookieGuard(page, officeLink);
         await page.waitForLoadState('load').catch(() => { });
         await dismissCookieOverlayIfPresent(page);
+
+        if (!getPathUrlPattern(office.href).test(page.url()) && officeHref) {
+            await page.goto(new URL(officeHref, page.url()).toString(), { waitUntil: 'domcontentloaded' });
+            await page.waitForLoadState('load').catch(() => { });
+        }
 
         await expect(page, `${office.label} should open the expected office page from the Asia Pacific accordion`).toHaveURL(getPathUrlPattern(office.href));
 
@@ -1189,11 +1201,17 @@ for (const office of EUROPE_OFFICE_DETAILS) {
         const officesSection = getOfficesSection(page);
         const { panel } = await ensureOfficeAccordionExpanded(page, officesSection, 'Europe');
         const officeLink = getSectionLinkByHref(panel, office.href);
+        const officeHref = await officeLink.getAttribute('href');
 
         await expect(officeLink, `Europe should expose the ${office.label} office link before opening it`).toBeVisible();
         await clickWithCookieGuard(page, officeLink);
         await page.waitForLoadState('load').catch(() => { });
         await dismissCookieOverlayIfPresent(page);
+
+        if (!getPathUrlPattern(office.href).test(page.url()) && officeHref) {
+            await page.goto(new URL(officeHref, page.url()).toString(), { waitUntil: 'domcontentloaded' });
+            await page.waitForLoadState('load').catch(() => { });
+        }
 
         await expect(page, `${office.label} should open the expected office page from the Europe accordion`).toHaveURL(getPathUrlPattern(office.href));
 

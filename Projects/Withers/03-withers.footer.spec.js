@@ -123,7 +123,7 @@ function isAbsoluteHttpUrl(value) {
 
 async function clickFooterLinkAndVerify(page, baseURL, href, target, name, options = {}) {
     const footer = await openHomeFooter(page);
-    const link = footer.locator(`a[href=${JSON.stringify(href)}]`).first();
+    const link = footer.locator(`a[href=${JSON.stringify(href)}]:visible`).first();
     await expect(link, `Footer link "${name}" (${href}) should be visible before clicking`).toBeVisible({ timeout: 10000 });
     await expect(link, `Footer link "${href}" should expose the expected accessible name`).toHaveAccessibleName(name, { timeout: 10000 });
     await expect(link, `Footer link "${name}" should point to the expected destination`).toHaveAttribute('href', href);

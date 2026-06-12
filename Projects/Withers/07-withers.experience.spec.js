@@ -163,8 +163,15 @@ async function getExperiencePracticeLinks(page) {
 }
 
 async function openPracticePage(page, practicePagePath) {
-    await page.goto(practicePagePath, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('load');
+    const firstAttemptSucceeded = await page.goto(practicePagePath, { waitUntil: 'domcontentloaded', timeout: 60000 })
+        .then(() => true)
+        .catch(() => false);
+
+    if (!firstAttemptSucceeded) {
+        await page.goto(practicePagePath, { waitUntil: 'commit', timeout: 60000 });
+    }
+
+    await page.waitForLoadState('load', { timeout: 30000 }).catch(() => { });
     await acceptCookiesIfPresent(page);
 }
 

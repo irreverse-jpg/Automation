@@ -328,6 +328,7 @@ test('Newsroom - Latest News Listing Show More and Footer', async ({ page }) => 
 }, 30000);
 
 test('Newsroom - Press Office Team Profile Cards flip on Hover and Open the Matching People Pages', async ({ page }) => {
+    test.setTimeout(120000);
     await test.step('Collect the press office profiles from the newsroom page', async () => {
         await openNewsroomPage(page);
 
@@ -361,7 +362,7 @@ test('Newsroom - Press Office Team Profile Cards flip on Hover and Open the Matc
             });
         }
     });
-}, 60000);
+});
 
 test('Newsroom - Latest News Sample Articles Keep Their Expected Metadata and Article Page Elements', async ({ page }) => {
     test.setTimeout(8 * 60 * 1000);

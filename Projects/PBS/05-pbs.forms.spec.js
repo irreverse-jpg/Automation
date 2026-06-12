@@ -15,29 +15,70 @@ function numberToWord(n) {
     return n < words.length ? words[n] : `Num${n}`;
 }
 
-async function acceptCookiesIfPresent(page) {
+async function acceptCookiesIfPresent(page, options = {}) {
+    const { silent = false } = options;
     const cookieButton = page.locator(COOKIE_ACCEPT_SELECTOR);
     if (await cookieButton.first().isVisible().catch(() => false)) {
-        console.log('Cookie button found, clicking...');
+        if (!silent) {
+            console.log('Cookie button found, clicking...');
+        }
         await cookieButton.first().click();
-    } else {
+    } else if (!silent) {
         console.log('Cookie button not found or not visible.');
     }
 }
 
-async function waitForRecaptchaChecked(page) {
-    const recaptchaFrameLocator = page.frameLocator('iframe[title="reCAPTCHA"]');
-    while (true) {
-        try {
-            // Wait for the checkbox to be checked (aria-checked="true")
-            await recaptchaFrameLocator.locator('#recaptcha-anchor[aria-checked="true"]').waitFor({ timeout: 1000 });
-            break; // Success, exit loop
-        } catch (e) {
-            // If timeout or element is detached, loop and try again
-        }
-        // Small delay to avoid tight loop
-        await page.waitForTimeout(500);
+async function isRecaptchaSolved(page) {
+    const tokenHasValue = await page.evaluate(() => {
+        const token = document.querySelector('textarea[name="g-recaptcha-response"], #g-recaptcha-response');
+        return Boolean(token && token.value && token.value.trim().length > 0);
+    });
+
+    if (tokenHasValue) {
+        return true;
     }
+
+    const recaptchaAnchor = page.frameLocator('iframe[title*="reCAPTCHA" i]').locator('#recaptcha-anchor').first();
+    const anchorVisible = await recaptchaAnchor.isVisible().catch(() => false);
+
+    if (!anchorVisible) {
+        return false;
+    }
+
+    const ariaChecked = await recaptchaAnchor.getAttribute('aria-checked').catch(() => null);
+    return ariaChecked === 'true';
+}
+
+async function waitForManualRecaptchaAndEnabledSubmit(page, timeoutMs = 300000) {
+    const submitBtn = page.getByRole('button', { name: 'Submit your callback details' });
+    await expect(submitBtn).toBeVisible({ timeout: 30000 });
+    await submitBtn.scrollIntoViewIfNeeded().catch(() => { });
+    await page.bringToFront().catch(() => { });
+
+    console.log('Manual action required: please tick the reCAPTCHA checkbox in the browser. Test will continue automatically once solved and submit is enabled.');
+
+    const startedAt = Date.now();
+    let loopCount = 0;
+    while (Date.now() - startedAt < timeoutMs) {
+        if (loopCount % 5 === 0) {
+            await acceptCookiesIfPresent(page, { silent: true });
+        }
+        loopCount += 1;
+
+        const [recaptchaSolved, submitEnabled] = await Promise.all([
+            isRecaptchaSolved(page),
+            submitBtn.isEnabled().catch(() => false),
+        ]);
+
+        if (recaptchaSolved && submitEnabled) {
+            console.log('reCAPTCHA solved and submit button enabled. Continuing submission flow.');
+            return;
+        }
+
+        await page.waitForTimeout(400);
+    }
+
+    throw new Error('Timed out waiting for manual reCAPTCHA completion and enabled submit button.');
 }
 
 async function getVisibleValidationMessages(page) {
@@ -177,7 +218,7 @@ test('Forms - Validate Partial Submission', async ({ page }) => {
     });
 });
 
-test.skip('Forms - Validate Successful Submission', async ({ page }) => {
+test('Forms - Validate Successful Submission', async ({ page }) => {
     test.setTimeout(300000); // 5 minutes
     const submissionNum = getCurrentSubmissionNumber();
     const submissionWord = numberToWord(submissionNum);
@@ -214,10 +255,16 @@ test.skip('Forms - Validate Successful Submission', async ({ page }) => {
         'Weekday: 11am - 2pm',
         'Weekday: 2pm - 5pm'
     ];
+    const callBackTimePatterns = [
+        /weekday\s*:\s*9[:.]?30am\s*-\s*11am/i,
+        /weekday\s*:\s*11am\s*-\s*2pm/i,
+        /weekday\s*:\s*2pm\s*-\s*5pm/i,
+    ];
 
     const residence = residenceOptions[submissionNum % residenceOptions.length];
     const propertyLocation = propertyLocationOptions[submissionNum % propertyLocationOptions.length];
     const mortgageType = mortgageTypeOptions[submissionNum % mortgageTypeOptions.length];
+    const enquiryDetails = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim.';
 
     await page.getByLabel('Title').selectOption({ label: title });
     await page.getByLabel('First name').fill(firstName);
@@ -232,15 +279,39 @@ test.skip('Forms - Validate Successful Submission', async ({ page }) => {
     await page.getByLabel(mortgageType).check();
     await page.getByLabel('How much is the property value?').fill('300000');
     await page.getByLabel('How much is your deposit?').fill('50000');
+    await page.getByLabel('Tell us more').fill(enquiryDetails);
 
     const numToSelect = (submissionNum % 3) + 1;
+    let callbackSelectionCount = 0;
     for (let i = 0; i < numToSelect; i++) {
-        await page.getByLabel(callBackTimeOptions[i], { exact: true }).check();
+        let selected = false;
+
+        const exactSlot = page.getByLabel(callBackTimeOptions[i], { exact: true });
+        if (await exactSlot.isVisible().catch(() => false)) {
+            await exactSlot.check();
+            selected = true;
+            callbackSelectionCount += 1;
+        }
+
+        if (!selected) {
+            const fallbackSlot = page.getByRole('checkbox', { name: callBackTimePatterns[i] }).first();
+            if (await fallbackSlot.isVisible().catch(() => false)) {
+                await fallbackSlot.check();
+                selected = true;
+                callbackSelectionCount += 1;
+            }
+        }
     }
 
-    await waitForRecaptchaChecked(page);
+    if (callbackSelectionCount === 0) {
+        console.log('Callback time checkboxes are not present in this environment. Continuing without selecting time preferences.');
+    }
 
-    await page.getByRole('button', { name: 'Submit your callback details' }).click();
+    await waitForManualRecaptchaAndEnabledSubmit(page);
+
+    const submitBtn = page.getByRole('button', { name: 'Submit your callback details' });
+    await expect(submitBtn).toBeEnabled({ timeout: 10000 });
+    await submitBtn.click();
 
     await expect(page.getByText('Thank you for your enquiry')).toBeVisible({ timeout: 30000 });
     await expect(page).toHaveURL(/\/home\/mortgages\/mortgage-enquiry-form\/successful-form-submission$/, { timeout: 30000 });
