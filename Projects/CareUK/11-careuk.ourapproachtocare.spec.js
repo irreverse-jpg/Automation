@@ -242,6 +242,41 @@ async function getSectionCtaHrefByHeadingRegex(page, headingTag, headingRegex, c
     }, { tag: headingTag, wantedHeadingRegex: headingRegex, wantedCta: ctaPattern });
 }
 
+async function getVisibleMainContentLinkHrefs(page, hrefPattern) {
+    return page.evaluate(({ patternSource }) => {
+        const hrefMatcher = new RegExp(patternSource, 'i');
+        const normalize = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+        const isVisible = (element) => {
+            const style = window.getComputedStyle(element);
+            return style.display !== 'none' && style.visibility !== 'hidden' && element.getClientRects().length > 0;
+        };
+
+        const links = Array.from(document.querySelectorAll('a[href]'))
+            .filter((link) => isVisible(link))
+            .filter((link) => !link.closest('header, footer, .navigation, .breadcrumbs, #onetrust-consent-sdk, #onetrust-pc-sdk'))
+            .filter((link) => normalize(link.textContent).length > 0)
+            .map((link) => link.getAttribute('href') || '')
+            .filter((href) => href && href !== '#' && !href.startsWith('javascript:'));
+
+        const normalized = [];
+        for (const href of links) {
+            try {
+                const url = new URL(href, window.location.origin);
+                const candidate = `${url.pathname}${url.search}`;
+                if (hrefMatcher.test(candidate)) {
+                    normalized.push(candidate);
+                }
+            } catch {
+                if (hrefMatcher.test(href)) {
+                    normalized.push(href);
+                }
+            }
+        }
+
+        return Array.from(new Set(normalized));
+    }, { patternSource: hrefPattern });
+}
+
 async function verifyVideoModuleIfPresent(page) {
     const videoFrame = page.locator('iframe[src*="youtube" i], iframe[src*="vimeo" i]').first();
     if (await videoFrame.isVisible().catch(() => false)) {
@@ -661,10 +696,6 @@ const standardTraversalScenarios = [
         name: 'Our Approach to Care - What quality means to us Traversal',
         route: '/our-approach-to-care/what-quality-means-to-us',
     },
-    {
-        name: 'Our Approach to Care - Care regulators Traversal',
-        route: '/our-approach-to-care/our-performance/cqc',
-    },
 ];
 
 for (const scenario of standardTraversalScenarios) {
@@ -717,7 +748,154 @@ for (const scenario of qualityNestedScenarios) {
     }, 120000);
 }
 
-test('Our Approach to Care - Awards & Recognition Traversal', async ({ page, baseURL }) => {
+test('Our Approach to Care - Our Performance - What is the CQC Traversal', async ({ page, baseURL }) => {
+    test.setTimeout(180000);
+
+    const route = '/our-approach-to-care/our-performance/cqc';
+
+    await test.step('Open CQC page and verify title, breadcrumb, and H1', async () => {
+        await openOurApproachToCareSubpage(page, baseURL, route);
+
+        await expect(page, 'CQC page should expose expected title').toHaveTitle(/cqc\s*and\s*ratings/i);
+        await expect(page.getByRole('heading', { level: 1, name: /^what is the cqc\??$/i }).first(), 'CQC page should expose matching H1').toBeVisible();
+
+        const breadcrumb = page.locator('nav[aria-label*="breadcrumb" i]').first();
+        await expect(breadcrumb, 'CQC page should expose breadcrumb navigation').toHaveCount(1);
+
+        const currentItem = breadcrumb.locator('.breadcrumb-item.active, [aria-current="page"]').first();
+        await expect(currentItem, 'CQC page breadcrumb current item should be present').toHaveCount(1);
+        await expect(currentItem, 'CQC page breadcrumb current item should read What is the CQC?').toHaveText(/what is the cqc\??/i);
+    });
+
+    await test.step('Verify care homes list exists', async () => {
+        const careHomeLinks = await getVisibleMainContentLinkHrefs(page, '/care-homes/');
+        expect(careHomeLinks.length, 'CQC page should expose at least one care-home link in the main content list').toBeGreaterThan(0);
+    });
+
+    await test.step('Verify FAQ heading and accordion behavior', async () => {
+        const faqHeading = page.getByRole('heading', { name: /faq|frequently asked questions/i }).first();
+        await expect(faqHeading, 'CQC page should expose an FAQ heading').toBeVisible();
+        await verifyAccordionModuleIfPresent(page);
+    });
+
+    await test.step('Verify news block, Show More behavior, and open two news items', async () => {
+        const newsHrefPattern = '^/(news|latest-news|newsroom|insights?|blogs?)/';
+        const initialNewsHrefs = await getVisibleMainContentLinkHrefs(page, newsHrefPattern);
+        expect(initialNewsHrefs.length, 'News section should expose at least one featured item plus six additional items').toBeGreaterThanOrEqual(7);
+
+        const showMoreButton = page.locator('button, a[role="button"], a').filter({ hasText: /show more/i }).first();
+        if (await showMoreButton.isVisible().catch(() => false)) {
+            const beforeCount = initialNewsHrefs.length;
+            await clickWithCookieGuard(page, showMoreButton);
+
+            await expect.poll(async () => {
+                const currentHrefs = await getVisibleMainContentLinkHrefs(page, newsHrefPattern);
+                return currentHrefs.length;
+            }, {
+                message: 'Show More should append additional news cards when available',
+                timeout: 10000,
+            }).toBeGreaterThan(beforeCount);
+        }
+
+        const newsAfterExpand = await getVisibleMainContentLinkHrefs(page, newsHrefPattern);
+        const sampleNewsHrefs = newsAfterExpand.slice(0, 2);
+        expect(sampleNewsHrefs.length, 'News section should provide at least two items to open').toBeGreaterThanOrEqual(2);
+
+        for (const href of sampleNewsHrefs) {
+            await openOurApproachToCareSubpage(page, baseURL, route);
+
+            const link = await getVisibleContentLink(page, href, /.+/);
+            expect(link, `News item ${href} should be visible and clickable from CQC page`).toBeTruthy();
+
+            await clickWithCookieGuard(page, link);
+            await page.waitForLoadState('load').catch(() => { });
+            await dismissCookieOverlayIfPresent(page);
+
+            await expect(page, `News item ${href} should open the matching article page`).toHaveURL(new RegExp(`${new URL(href, baseURL).toString()}(?:$|[?#])`, 'i'));
+            await expect(page.getByRole('heading', { level: 1 }).first(), `News item ${href} page should expose an H1`).toBeVisible();
+        }
+    });
+
+    await test.step('Verify footer visibility and TOP control behavior', async () => {
+        await verifyTopControlIfPresent(page);
+    });
+}, 180000);
+
+test('Our Approach to Care - Our Performance - Our Approach to Care in Scotland Traversal', async ({ page, baseURL }) => {
+    test.setTimeout(180000);
+
+    const route = '/our-approach-to-care/our-performance/care-in-scotland';
+
+    await test.step('Open Care in Scotland page and verify title, breadcrumb, and H1', async () => {
+        await openOurApproachToCareSubpage(page, baseURL, route);
+
+        await expect(page, 'Care in Scotland page should expose expected title').toHaveTitle(/care in scotland/i);
+        await expect(page.getByRole('heading', { level: 1, name: /^care uk is the top-rated provider in scotland$/i }).first(), 'Care in Scotland page should expose matching H1').toBeVisible();
+
+        const breadcrumb = page.locator('nav[aria-label*="breadcrumb" i]').first();
+        await expect(breadcrumb, 'Care in Scotland page should expose breadcrumb navigation').toHaveCount(1);
+
+        const currentItem = breadcrumb.locator('.breadcrumb-item.active, [aria-current="page"]').first();
+        await expect(currentItem, 'Care in Scotland page breadcrumb current item should be present').toHaveCount(1);
+        await expect(currentItem, 'Care in Scotland page breadcrumb current item should read Our approach to care in Scotland').toHaveText(/our approach to care in scotland/i);
+    });
+
+    await test.step('Verify care homes list exists', async () => {
+        const careHomeLinks = await getVisibleMainContentLinkHrefs(page, '/care-homes/');
+        expect(careHomeLinks.length, 'Care in Scotland page should expose at least one care-home link in the main content list').toBeGreaterThan(0);
+    });
+
+    await test.step('Verify FAQ heading and accordion behavior if present', async () => {
+        const faqHeading = page.getByRole('heading', { name: /faq|frequently asked questions/i }).first();
+        if (await faqHeading.isVisible().catch(() => false)) {
+            await verifyAccordionModuleIfPresent(page);
+        }
+    });
+
+    await test.step('Verify news block, Show More behavior, and open two news items', async () => {
+        const newsHrefPattern = '^/(news|latest-news|newsroom|insights?|blogs?)/';
+        const initialNewsHrefs = await getVisibleMainContentLinkHrefs(page, newsHrefPattern);
+        expect(initialNewsHrefs.length, 'News section should expose at least one news item').toBeGreaterThanOrEqual(1);
+
+        const showMoreButton = page.locator('button, a[role="button"], a').filter({ hasText: /show more/i }).first();
+        if (await showMoreButton.isVisible().catch(() => false)) {
+            const beforeCount = initialNewsHrefs.length;
+            await clickWithCookieGuard(page, showMoreButton);
+
+            await expect.poll(async () => {
+                const currentHrefs = await getVisibleMainContentLinkHrefs(page, newsHrefPattern);
+                return currentHrefs.length;
+            }, {
+                message: 'Show More should append additional news cards when available',
+                timeout: 10000,
+            }).toBeGreaterThan(beforeCount);
+        }
+
+        const newsAfterExpand = await getVisibleMainContentLinkHrefs(page, newsHrefPattern);
+        const sampleNewsHrefs = newsAfterExpand.slice(0, Math.min(2, newsAfterExpand.length));
+        expect(sampleNewsHrefs.length, 'News section should provide at least one item to open').toBeGreaterThanOrEqual(1);
+
+        for (const href of sampleNewsHrefs) {
+            await openOurApproachToCareSubpage(page, baseURL, route);
+
+            const link = await getVisibleContentLink(page, href, /.+/);
+            expect(link, `News item ${href} should be visible and clickable from Care in Scotland page`).toBeTruthy();
+
+            await clickWithCookieGuard(page, link);
+            await page.waitForLoadState('load').catch(() => { });
+            await dismissCookieOverlayIfPresent(page);
+
+            await expect(page, `News item ${href} should open the matching article page`).toHaveURL(new RegExp(`${new URL(href, baseURL).toString()}(?:$|[?#])`, 'i'));
+            await expect(page.getByRole('heading', { level: 1 }).first(), `News item ${href} page should expose an H1`).toBeVisible();
+        }
+    });
+
+    await test.step('Verify footer visibility and TOP control behavior', async () => {
+        await verifyTopControlIfPresent(page);
+    });
+}, 180000);
+
+test('Our Approach to Care - Our Performance - Awards & Recognition Traversal', async ({ page, baseURL }) => {
     test.setTimeout(120000);
 
     const route = '/our-approach-to-care/our-performance/our-awards';
@@ -737,7 +915,7 @@ test('Our Approach to Care - Awards & Recognition Traversal', async ({ page, bas
     });
 }, 120000);
 
-test('Our Approach to Care - What others say Traversal', async ({ page, baseURL }) => {
+test('Our Approach to Care - Our Performance - What others say Traversal', async ({ page, baseURL }) => {
     test.setTimeout(600000);
 
     const route = '/our-approach-to-care/our-performance/what-others-have-to-say';
