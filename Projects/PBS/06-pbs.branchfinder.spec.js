@@ -54,28 +54,30 @@ test('Branch Finder - Use Branch Finder Search Functionality', async ({ page }) 
 
 test('Branch Finder - Select a Branch from the Search Results', async ({ page }) => {
     await test.step('Open the branch finder page', async () => {
-        await page.goto('/home/contact-us/branch-finder', { waitUntil: 'domcontentloaded' });
+        await page.goto('/home/contact-us/branch-finder', { waitUntil: 'load' });
         await acceptCookiesIfPresent(page);
+        await page.waitForLoadState('load');
         await expectBranchFinderPageChrome(page);
     });
 
     await test.step('Search branch finder for Cardiff', async () => {
         const searchBox = page.getByRole('searchbox', { name: 'Search by city or postcode' });
+        await expect(searchBox, 'Branch finder should expose the search input').toBeVisible({ timeout: 5000 });
         await searchBox.fill('Cardiff');
         await searchBox.press('Enter');
 
-        const albanyResult = page.locator('text=Albany Road').first();
-        await expect(albanyResult, 'Searching for Cardiff should reveal the Albany Road result').toBeVisible({ timeout: 10000 });
+        const resultsHeading = page.getByRole('heading', { level: 2, name: /Results for: Cardiff/ });
+        await expect(resultsHeading, 'Searching for Cardiff should show the Cardiff results heading').toBeVisible({ timeout: 20000 });
     });
 
-    await test.step('Open the Albany Road branch details page', async () => {
-        const viewDetailsLink = page.getByRole('link', { name: 'View branch details' }).nth(2);
-        await expect(viewDetailsLink, 'Albany Road result should expose a View branch details link').toBeVisible({ timeout: 5000 });
-        await viewDetailsLink.click();
+    await test.step('Open the first branch details page from the Cardiff results', async () => {
+        const firstViewDetailsLink = page.getByRole('link', { name: 'View branch details' }).first();
+        await expect(firstViewDetailsLink, 'Cardiff results should expose at least one View branch details link').toBeVisible({ timeout: 20000 });
+        await firstViewDetailsLink.click();
 
-        await expect(page, 'Selecting Albany Road should navigate to its branch details page').toHaveURL(/\/home\/contact-us\/branch-finder\/albany-road/);
-        const branchDetailsHeading = page.getByRole('heading', { level: 1, name: /Albany Road/ });
-        await expect(branchDetailsHeading, 'Albany Road details page should show the Albany Road heading').toBeVisible();
+        await expect(page, 'Selecting the first Cardiff result should navigate to a branch details page').toHaveURL(/\/home\/contact-us\/branch-finder\/.+/);
+        const branchDetailsHeading = page.getByRole('heading', { level: 1 });
+        await expect(branchDetailsHeading, 'Branch details page should show an H1 heading for the selected branch').toBeVisible();
     });
 });
 

@@ -31,7 +31,7 @@ module.exports = defineConfig({
         storageState: undefined,
         /*
         Change the baseURL manually to run the desired environment.
-        For QA: https://w-qa.hosted.positive.co.uk/en-gb
+        For UAT: https://w-uat.hosted.positive.co.uk/en-gb
         For Live: https://www.withersworldwide.com/en-gb
         */
         baseURL: process.env.WITHERS_BASE_URL || 'https://w-uat.hosted.positive.co.uk/en-gb',
