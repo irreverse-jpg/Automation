@@ -1,5 +1,60 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Newsroom (/insight/newsroom)
+// ============================================================================
+// Scope: the newsroom hub page - hero, the "Meet the press office team"
+// profile cards, and the "Latest news" date-sorted article listing
+// (including its "Show more"/"Show More" pagination and the article pages
+// it links to).
+//
+// Tests in this file:
+//   1. Newsroom - Initial Page Load Checks
+//      Verifies title/H1 and the hero's "Get in touch" CTA.
+//   2. Newsroom - Office Team and Latest News Listing
+//      Confirms at least one press office profile card is visible and the
+//      initial batch of Latest news cards (>=16) is sorted newest-to-oldest.
+//   3. Newsroom - Latest News Listing Show More and Footer
+//      Clicks "Show more" once, confirms exactly 16 more cards appear
+//      (still in descending date order), and confirms the footer sits
+//      below the content.
+//   4. Newsroom - Press Office Team Profile Cards flip on Hover and Open
+//      the Matching People Pages
+//      Hovers each press office card (confirming the flip reveals a "View
+//      Profile" CTA linked to the right people page), follows it, and
+//      confirms the destination's H1/title match the card's name.
+//   5. Newsroom - Latest News Sample Articles Keep Their Expected Metadata
+//      and Article Page Elements
+//      Samples 10 article cards spread across the listing (expanding via
+//      "Show More" as needed, deliberately a SAMPLE rather than every
+//      article - this listing can be large), and for each one confirms
+//      the card's title/date/href, then opens it and checks the article
+//      hero, date/type metadata, all 4 share links (X/Twitter, LinkedIn,
+//      Facebook, email), the optional "Join the club" section if present,
+//      and the footer - then goes back and confirms the newsroom listing
+//      is restored to the same expanded state.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
 const NEWSROOM_PATH = '/insight/newsroom';

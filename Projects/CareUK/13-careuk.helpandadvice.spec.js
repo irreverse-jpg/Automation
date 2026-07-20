@@ -1,5 +1,71 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Help & Advice (/help-advice)
+// ============================================================================
+// Scope: The Help & Advice hub page (news/article panel, category filter,
+// Further sources section) plus its three onward destinations - Our Guides
+// (with a full traversal of every guide tile), Sources of Advice and Support
+// (Support at a stressful time), and Glossary of Terms - plus Dementia Help
+// & Advice, a separate meganav-linked article-listing page under the same
+// "Help and advice" section.
+//
+// Tests in this file (6 total):
+//   1. Help & Advice - Initial Page Checks - verifies title/H1/breadcrumb,
+//      scrolls to the news panel and confirms at least 7 tiles (1 main + 6
+//      others) with optional Show more expansion, verifies the Further
+//      Sources of Helpful Information section (Our Guides, Sources of Advice
+//      and Support, Glossary of Terms) each expose the correct heading and a
+//      READ MORE CTA pointing at the right route, then checks footer/TOP.
+//   2. Help & Advice - Category Selector - iterates every option in the
+//      category filter dropdown (skipping the default "Category (All)"),
+//      submits each, and for each one either confirms a no-results message
+//      or confirms the "Search results for: <category>" heading, results
+//      count text, and that every visible article tile's type label matches
+//      the selected category (before and after an optional Show more click).
+//   3. Help & Advice - Our Guides Traversal - opens Our Guides, verifies
+//      title/H1/breadcrumb, then dynamically traverses every guide tile
+//      found on the page, confirming each destination's H1/breadcrumb/title
+//      shares a meaningful token with the tile's link text and checking
+//      footer/TOP on each, plus a nearest-care-home postcode search and a
+//      final footer/TOP check on the Our Guides page itself.
+//   4. Help & Advice - Sources of Advice and Support Traversal - opens
+//      Support at a stressful time, verifies title/H1/breadcrumb, checks the
+//      hero "Find a care home" button routes to /care-homes, confirms the
+//      article listing (>=7 tiles) with optional Show more, checks the
+//      "Visit our help and advice area" button routes back to /help-advice,
+//      runs a nearest-care-home postcode search, then checks footer/TOP.
+//   5. Help & Advice - Glossary of Terms Traversal - opens Glossary of
+//      Terms, verifies H1/title/breadcrumb, checks the hero button routes
+//      back to /help-advice, then checks footer/TOP.
+//   6. Help & Advice - Dementia Help & Advice Traversal - added to close a
+//      real meganav coverage gap (previously untested). Opens
+//      /help-advice/dementia-help-advice directly (its own meganav entry,
+//      not a card reached from the hub page), verifies title/H1/breadcrumb,
+//      confirms article tiles with optional Show more, then footer/TOP.
+//
+// The Category Selector test reads its option list live from the page's
+// <select> rather than a hardcoded list, so it naturally adapts if categories
+// are added/removed/renamed on the site.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = '#onetrust-accept-btn-handler, button:has-text("YES, ALLOW ALL"), button:has-text("Accept")';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, #onetrust-pc-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
@@ -604,6 +670,38 @@ test('Help & Advice - Glossary of terms Traversal', async ({ page, baseURL }) =>
     }
 
     await verifyFooterAndTopButton(page, 'Glossary of terms page');
+});
+
+test('Help & Advice - Dementia Help & Advice Traversal', async ({ page }) => {
+    // Added to close a real meganav coverage gap - this page previously had
+    // no test at all. It's a filtered article-listing page using the same
+    // tile/Show-more component as the main /help-advice hub, reached via its
+    // own meganav entry rather than a card on the hub page.
+    test.setTimeout(120000);
+
+    await test.step('Open /help-advice/dementia-help-advice and verify title, breadcrumb, and H1', async () => {
+        await page.goto('/help-advice/dementia-help-advice', { waitUntil: 'domcontentloaded' });
+        await page.waitForLoadState('load').catch(() => { });
+        await acceptCookiesIfPresent(page);
+
+        await expect(page, 'Dementia help & advice page title should include Dementia help & advice').toHaveTitle(/dementia help\s*&?\s*advice/i);
+        await expect(page.getByRole('heading', { level: 1 }).first(), 'Dementia help & advice page H1 should be Dementia help & advice').toContainText(/dementia help\s*&?\s*advice/i);
+        await expect(page.locator('nav[aria-label*="breadcrumb" i], .breadcrumb, .bc').first(), 'Dementia help & advice breadcrumb should include Help and advice').toContainText(/help\s*&\s*advice|help and advice/i);
+    });
+
+    await test.step('Verify article tiles and Show more if present', async () => {
+        const tiles = getHelpAdviceTiles(page);
+        const initialCount = await tiles.count();
+        expect(initialCount, 'Dementia help & advice should expose at least one article tile').toBeGreaterThan(0);
+
+        const showMore = getHelpAdviceShowMore(page);
+        if (await showMore.isVisible().catch(() => false)) {
+            const before = await tiles.count();
+            await helpAdviceClickShowMoreAndWait(page, before, 'Dementia help & advice Show more click');
+        }
+    });
+
+    await verifyFooterAndTopButton(page, 'Dementia help & advice page');
 });
 
 

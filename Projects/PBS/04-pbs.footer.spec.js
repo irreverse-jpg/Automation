@@ -1,5 +1,52 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - principality.co.uk site-wide footer
+// ============================================================================
+// Scope: `footer`, reached from the homepage - the logo, every visible
+// footer link (discovered dynamically, not hardcoded), and the social
+// icon row.
+//
+// Tests in this file:
+//   1. Footer - Verify Footer is Present
+//      Confirms the footer is visible on the homepage.
+//   2. Footer - Verify Logo is Present
+//      Confirms the Principality logo image is visible in the footer.
+//   3. Footer - Verify Links
+//      Discovers every visible footer link (excluding anchors,
+//      javascript:/mailto:/tel: links, and social domains) and checks each
+//      resolves with a fast HEAD (falling back to GET) request, not a full
+//      navigation - failures are warned to the console rather than failing
+//      the test outright (network hiccups on a bulk link sweep like this
+//      shouldn't block the whole run).
+//   4. Footer - Verify Social Links
+//      Discovers every footer link pointing at a known social domain
+//      (LinkedIn, Facebook, Instagram, YouTube, TikTok) and clicks each one
+//      for real, confirming it opens a popup (`target="_blank"`) or
+//      navigates away in the same tab - also warns rather than fails on
+//      timeout, same reasoning as above.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 // Cookie Selector (If there is one)
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 async function acceptCookiesIfPresent(page) {

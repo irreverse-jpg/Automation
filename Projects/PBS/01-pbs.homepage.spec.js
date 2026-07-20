@@ -1,5 +1,49 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - principality.co.uk homepage ("/")
+// ============================================================================
+// Scope: the homepage only - hero/title, scroll behaviour, header navigation
+// links, key body CTAs, and the English/Welsh language switcher.
+//
+// Tests in this file:
+//   1. Homepage - Homepage Loads
+//      Loads "/" and checks the page title.
+//   2. Homepage - Scrolling through the Page
+//      Scrolls to the footer, back to the top, and to the middle, checking
+//      scroll position changes as expected at each step (gracefully skips
+//      the middle-scroll check if the page isn't tall enough to scroll).
+//   3. Homepage - Navigate Various Pages from the Header Links
+//      Clicks each header link (Find a branch, Contact us, Intermediaries,
+//      Commercial) and confirms it lands on the expected URL.
+//   4. Homepage - Navigate Various Pages from the Body Links
+//      Follows the main "View Cash ISAs" savings CTA plus 3 further body
+//      links (Visit savings home, View all savings guides, Find your local
+//      branch), confirming URL and title on each destination, then goes back.
+//   5. Homepage - Language Switcher
+//      Switches to Welsh (checks URL/title), then back to English.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 // Cookie Selector (If there is one)
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#CybotCookiebotDialogBodyUnderlay, #CybotCookiebotDialog, #onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-consent-sdk';

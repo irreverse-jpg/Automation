@@ -1,6 +1,73 @@
+// COVERAGE NOTES - Non-Functional (SEO + security + accessibility) suite
+// =========================================================================
+//
+// What this file covers: sitewide SEO, security-header, and accessibility (axe-core) checks that
+// aren't tied to any single page's functional content. KEY_PAGES (homepage, Fixtures and Results,
+// Tours, About Us, Careers Vacancies) is the shared sample set used across most of the per-page
+// checks below.
+//
+// Test list (19 tests):
+// SEO / crawlability:
+//   1. Sitemap is available and contains URLs
+//   2. Sitemap sample URLs resolve (no 4xx/5xx)
+//   3. robots.txt is available and advertises crawl directives
+//   4. Canonical and robots directives on key pages
+//   5. Core meta tags are present (charset, viewport, description)
+//   6. Open Graph and social metadata exists
+//   7. Google Analytics / Tag Manager signal exists
+//   8. Structured data (JSON-LD) exists and is valid JSON (falls back to schema.org microdata, then
+//      skips if neither is present)
+// Security:
+//   9. CSP and basic security headers are in place
+//   10. No mixed-content HTTP assets/links on homepage
+//   11. Basic document/head essentials are present (lang, title, favicon, hardening headers)
+// Accessibility:
+//   12. Document language is English
+//   13. Homepage has no critical axe violations
+//   14. Key user pages have no critical axe violations
+//   15. Landmark structure exists on key pages (main/banner/contentinfo)
+//   16. At least one H1 exists on core pages
+//   17. Interactive controls expose accessible names
+//   18. Images have alt text or are explicitly decorative
+//   19. Skip link is available and keyboard focus moves on Tab
+//
+// Environment-conditional logic: NONE. Unlike the other specs in this project, this file contains no
+// isUatEnvironment()/baseURL branching and no UAT2-specific documented findings - every check reads
+// its target from the configured Playwright baseURL and applies identically regardless of
+// environment. Re-verified 2026-07-16 against both Live and UAT2 post-sync: the two environments
+// produce the same pass/fail pattern on every test in this file, so there is nothing here that was
+// stale due to the Live -> UAT2 content sync.
+//
+// Known flakiness (not environment-specific, not fixed here): this week both Live and UAT2 have shown
+// intermittent `domcontentloaded` navigation timeouts under this suite's default 30s action/navigation
+// timeouts, particularly on the homepage and Fixtures and Results - a direct curl/second-attempt
+// confirms the sites themselves are healthy, so this is transient network conditions rather than a
+// site or test defect. A small number of pre-existing, environment-agnostic findings (e.g. an
+// unlabelled `<select>` on the Fixtures and Results page, an apostrophe HTML-entity mismatch between
+// raw canonical HTML and the rendered title, and a missing `alt`/label on the footer sponsors logo
+// link) were also observed identically on both environments - these are real findings worth tracking,
+// but are unrelated to the UAT2 sync and are left as-is per this pass's scope.
+
 const http = require('http');
 const https = require('https');
 const { test, expect } = require('@playwright/test');
+
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
 const AxeBuilder = require('@axe-core/playwright').default;
 
 const KEY_PAGES = ['/', '/lords/match-day/fixtures-and-results', '/lords/lord-s-experience/tours', '/mcc/the-club/about-us', '/careers/vacancies'];

@@ -1,5 +1,55 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Mortgage Enquiry Form (/home/mortgages/mortgage-enquiry-form)
+// ============================================================================
+// Scope: the mortgage callback enquiry form - presence, empty/partial
+// validation, and a full real submission.
+//
+// Tests in this file:
+//   1. Forms - Verify Mortgage Enquiry Form is Present
+//      Confirms the form's heading and Last name field are visible.
+//   2. Forms - Validate When All Fields Empty
+//      Submits with every field empty and confirms the submission is
+//      blocked (native browser validity or a visible validation message),
+//      never reaching the success page.
+//   3. Forms - Validate Partial Submission
+//      Fills 4 of the required fields, submits, confirms it's still
+//      blocked and stays on the form with the entered values retained.
+//   4. Forms - Validate Successful Submission
+//      Fills every field with data derived from a persisted submission
+//      counter (`submissionCounter.js`/`submission-counter.txt` - so each
+//      real run's dataset differs from the last without needing an
+//      external log), rotating title/name/residence/mortgage
+//      type/callback-time selections. Waits for a REAL Google reCAPTCHA to
+//      be solved manually in the browser (`waitForManualRecaptchaAndEnabledSubmit`,
+//      up to 5 minutes) before submitting, then confirms the success
+//      message/URL and advances the counter.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// This form always requires a real reCAPTCHA solve, so this test can't run
+// unattended/headless to completion - it needs a person present to tick
+// the checkbox when prompted.
+// ============================================================================
+
 const formPath = '/home/mortgages/mortgage-enquiry-form';
 
 // Cookie Selector (If there is one)

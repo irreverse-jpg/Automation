@@ -1,5 +1,52 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - withersworldwide.com main navigation
+// ============================================================================
+// Scope: the site-wide primary navigation and header logo. Not scoped to
+// any single page - these tests open the homepage first, then drive the
+// menu from there.
+//
+// Tests in this file:
+//   1. Meganav - Verify Meganav is Present
+//      Confirms the primary navigation is visible once opened.
+//   2. Meganav - Verify Header Logo is Present
+//      Confirms the Withers header logo image is visible.
+//   3. Meganav - Expand Each of the Meganav Links
+//      Expands each top-level item (Experience, Locations, Insight, About)
+//      and confirms its expected 2nd-level option becomes visible.
+//   4. Meganav - Navigate to Second Level
+//      Walks 6 real navigation paths (Experience > Our practices; Locations
+//      > North America; Insight > Featured insight; About > Environmental
+//      responsibility > Reducing our impact; People; Careers), confirming
+//      each lands on its expected URL/heading.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// The navigation helpers are notably more defensive than other projects'
+// (retry-based homepage navigation, `navigateWithFallback` that falls back
+// to a direct `page.goto()` if a click-through doesn't land where
+// expected) - this reflects genuine responsive-header quirks on this site,
+// not something to simplify away.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
 

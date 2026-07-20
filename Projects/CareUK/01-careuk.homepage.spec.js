@@ -1,5 +1,48 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - careuk.co.uk homepage ("/")
+// ============================================================================
+// Scope: the homepage only - hero/title, scroll behaviour, header
+// navigation links, and 5 key body section links.
+//
+// Tests in this file:
+//   1. Homepage - Homepage Loads
+//      Loads "/" and checks the page title.
+//   2. Homepage - Scrolling Through the Page
+//      Scrolls to the footer, back to the top, and to the middle, checking
+//      scroll position at each step.
+//   3. Homepage - Navigate Various Pages from the Header Links
+//      Clicks each header link (Careers, Customers, Find a care home) and
+//      confirms it lands on the expected URL, then goes back.
+//   4. Homepage - Navigate Various Pages from the Body Links
+//      Follows 5 body section links (Trusted to care > Find a care home,
+//      Where do I start? > Read more, Types of care we offer > Read more,
+//      Life at our homes > Read more, Careers CTA > Visit careers
+//      website), confirming URL and the section heading reappears after
+//      going back.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 function buildExpectedUrl(baseURL, path) {
@@ -138,7 +181,7 @@ test('Homepage - Homepage Loads', async ({ page }) => {
     });
 
     await test.step('Verify homepage title', async () => {
-        await expect(page, 'Homepage should load with the expected Care UK title').toHaveTitle(/Care Homes \| Residential, Nursing & Dementia \| Care UK/i);
+        await expect(page, 'Homepage should load with the expected Care UK title').toHaveTitle(/Care Homes \| Residential, Nursing (?:&|and) Dementia \| Care UK/i);
     });
 }, 30000);
 

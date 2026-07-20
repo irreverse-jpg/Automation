@@ -1,5 +1,66 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Types of Care (/types-of-care) and every page it links to
+// ============================================================================
+// Scope: the "Types of Care" hub page (reached via the real menu), all 6
+// individual care-type destination pages (Residential, Respite, Dementia,
+// Nursing, Nursing Dementia, End-of-Life), 5 nested destinations under
+// Dementia Care, and the Day Clubs page (its own carousel, club-finder
+// links, and nearest-care-home search).
+//
+// Tests in this file (13 total):
+//   1. Types of Care - Initial Page Checks
+//      Navigates via the menu, checks title/breadcrumb/H1, follows the
+//      hero "FIND A CARE HOME" CTA to /care-homes and back, verifies all 6
+//      care-type cards expose the correct H4 + READ MORE CTA, checks the
+//      FAQ heading and every accordion item, then the TOP button + footer.
+//   2-7. Six generated "Traversal" tests (one per typesOfCareTraversalScenarios
+//      entry: Residential, Respite, Dementia, Nursing, Nursing Dementia,
+//      End-of-Life Care) - each runs the shared conditional traversal checks
+//      (video/FAQ-accordion/carousel/TOP if present). Note: Residential,
+//      Respite, Dementia, and Nursing Care are ALSO reached and deeply
+//      tested via the homepage carousel in 05-careuk.carehomes.spec.js - the
+//      two files test the same destination URLs via different entry paths,
+//      not a duplicate-coverage mistake.
+//   8-12. Five generated "Dementia Care - <Sub-topic> Traversal" tests
+//      (Understanding and Getting to Know You, Providing Dementia Friendly
+//      Environments, Our Dedicated People and Their Expertise, Support for
+//      Families and Carers, Namaste Care) - each opens Dementia Care,
+//      follows that sub-topic's own "Read more" CTA to its expected route,
+//      then the shared conditional checks.
+//   13. Types of Care - Day Clubs Traversal
+//      Navigates to Day Clubs via the menu, checks title/H1/breadcrumb and
+//      the page's usual modules, follows "Find care home" under "Find a
+//      day club near you" and back, clicks through EVERY individual day
+//      club link (confirming each club's name appears in both the
+//      destination's title and H1), checks "Get in touch" routes to
+//      /news/events/day-club-sign-up and back, confirms the day-clubs
+//      carousel's arrow state progresses correctly from start to end,
+//      checks a nearest-care-home search (M33 + "Day club only" option),
+//      then the footer/TOP button.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 function normalizeWhitespace(value) {

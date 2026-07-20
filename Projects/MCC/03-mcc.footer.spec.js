@@ -1,13 +1,64 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - lords.org site-wide footer
+// ============================================================================
+// Scope: `footer.footer`, reached by scrolling to the bottom of the
+// homepage - the primary site-links group, the secondary/legal links group
+// (duplicated in the DOM for mobile vs. desktop, hence the `:visible`
+// filters used throughout this file), and the social icon row.
+//
+// Tests in this file:
+//   1. Footer - Verify Footer is Present
+//      Confirms the footer and a stable primary link (Privacy Notice) are
+//      visible on the homepage.
+//   2. Footer - Verify Links
+//      Clicks each primary footer link (Privacy Notice, Ground Regulations,
+//      Contact Us), confirming href/navigation, a non-error response
+//      status, and a visible H1 on the destination.
+//   3. Footer - Verify Legal Links
+//      Same checks as above for the secondary/legal group (Terms &
+//      Conditions, Corporate Information, Report discrimination), all of
+//      which open in a new tab except Report discrimination.
+//   4. Footer - Verify Social Links
+//      Confirms each social icon (Facebook, LinkedIn, Twitter/X, Instagram,
+//      YouTube) is visible, has the right accessible name, opens in a new
+//      tab, and points at its expected social domain.
+//
+// Updated 2026-07-16: the footer's "Ground Regulations" link was previously
+// a confirmed-broken target (href `/footer/general-ground-regulations`,
+// 404 on UAT2) that the test deliberately kept failing on. Re-verified
+// directly and the site has since moved this link to a new, working href
+// (`/information/general-ground-regulations`, HTTP 200 with a real
+// "Ground Regulations" H1) on BOTH Live and UAT2 - the test data has been
+// updated to match. No other environment-conditional logic or
+// currently-confirmed Live-vs-UAT2 differences exist in this file as of
+// this check.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 const SOCIAL_DOMAINS = ['facebook.com', 'linkedin.com', 'twitter.com', 'instagram.com', 'youtube.com'];
 
-// "Ground Regulations" is deliberately kept as a real target rather than swapped for a working
-// link - see the known-defect note in project memory. It should keep failing until the site fixes it.
 const PRIMARY_FOOTER_LINKS = [
     { name: 'Privacy Notice', href: '/footer/privacy-policy', expectedPath: '/information/privacy-notice' },
-    { name: 'Ground Regulations', href: '/footer/general-ground-regulations', expectedPath: '/footer/general-ground-regulations' },
+    { name: 'Ground Regulations', href: '/information/general-ground-regulations', expectedPath: '/information/general-ground-regulations' },
     { name: 'Contact Us', href: '/lords/visit-us/contact', expectedPath: '/lords/visit-us/contact' },
 ];
 

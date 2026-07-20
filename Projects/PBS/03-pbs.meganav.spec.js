@@ -1,5 +1,49 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - principality.co.uk main navigation ("meganav")
+// ============================================================================
+// Scope: the site-wide top navigation bar (`nav#nav-main`) and the header
+// logo. Not scoped to any single page - these tests open the homepage
+// first, then drive the menu from there.
+//
+// Tests in this file:
+//   1. Meganav - Verify Meganav is Present
+//      Confirms the meganav is visible once opened.
+//   2. Meganav - Verify Header Logo is Present
+//      Confirms the "Principality Building Society" header logo is visible.
+//   3. Meganav - Expand Each of the Meganav Links
+//      Expands each top-level item (Mortgages, Savings, Help and support,
+//      About us) and confirms it reports `aria-expanded="true"`.
+//   4. Meganav - Navigate to Second Level
+//      Walks 5 real 2nd/3rd-level paths (Mortgages > Mortgage products >
+//      Residential mortgages; Mortgages > Choosing a mortgage > Mortgages
+//      home; Savings > Need help with savings > Savings support; Help and
+//      support > Difficult times > Closing an account; About us > Our
+//      impact > Building a fairer society), confirming each lands on its
+//      expected URL, then goes back.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 // Cookie Selector (If there is one)
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#CybotCookiebotDialogBodyUnderlay, #CybotCookiebotDialog, #onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-consent-sdk';

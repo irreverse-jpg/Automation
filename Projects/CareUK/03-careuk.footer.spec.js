@@ -1,5 +1,49 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - careuk.co.uk site-wide footer
+// ============================================================================
+// Scope: the footer (`contentinfo` landmark), reached from the homepage -
+// 4 fixed primary links, 5 fixed legal links, and 3 fixed social links
+// (Facebook, LinkedIn, Twitter/X).
+//
+// Tests in this file:
+//   1. Footer - Verify Footer is Present
+//      Confirms the footer and its "About Care UK" link are visible.
+//   2. Footer - Verify Links
+//      Clicks each of the 4 primary links (About Care UK, Press & media,
+//      Feedback & complaints, Careers at Care UK) for real, confirming
+//      each navigates to its expected URL with a visible H1.
+//   3. Footer - Verify Legal Links
+//      Same real-click check for the 5 legal links (Legal & regulatory
+//      information, Privacy notice (Residents), Cookies policy, Web
+//      Accessibility, Privacy notice (Job Applicants)).
+//   4. Footer - Verify Social Links
+//      Checks each of the 3 social links' visibility, accessible name,
+//      new-tab target, and that the href points at a supported domain -
+//      configuration only, not clicked.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 const SOCIAL_DOMAINS = ['facebook.com', 'linkedin.com', 'twitter.com'];
 const PRIMARY_FOOTER_LINKS = [

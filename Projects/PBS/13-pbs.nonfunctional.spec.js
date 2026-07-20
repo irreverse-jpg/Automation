@@ -1,5 +1,66 @@
 const { test, expect } = require('@playwright/test');
+
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
 const AxeBuilder = require('@axe-core/playwright').default;
+
+// ============================================================================
+// Coverage notes - Non-Functional (SEO + security + accessibility) suite
+// ============================================================================
+// What this file covers: sitewide SEO, security-header, and accessibility
+// (axe-core) checks that aren't tied to any single page's functional
+// content. A small sample set (homepage, savings, mortgages, branch finder)
+// is used across most of the per-page checks below.
+//
+// Test list (21 tests):
+// SEO / crawlability:
+//   1. Sitemap is available and contains URLs
+//   2. Sitemap sample URLs resolve (no 4xx/5xx)
+//   3. robots.txt is available and advertises sitemap
+//   4. Canonical and robots directives on key pages
+//   5. Canonical URL is present and absolute
+//   6. Core meta tags are present (charset, viewport, description)
+//   7. Open Graph and social metadata exists
+//   8. Google Analytics / Tag Manager signal exists
+//   9. Language alternates are discoverable (English/Welsh)
+// Security:
+//   10. CSP and basic security headers are in place
+//   11. No mixed-content HTTP assets/links on homepage
+//   12. Structured data (JSON-LD) exists and is valid JSON - skips
+//       gracefully if this environment doesn't currently expose JSON-LD or
+//       schema.org microdata
+//   13. Basic document/head essentials are present (lang, title, favicon,
+//       hardening headers)
+// Accessibility:
+//   14. Homepage has no critical axe violations
+//   15. Key user pages have no critical axe violations
+//   16. Landmark structure exists on key pages (main/banner/contentinfo)
+//   17. Exactly one H1 exists on core pages
+//   18. Interactive controls expose accessible names
+//   19. Images have alt text or are explicitly decorative
+//   20. Form fields have associated labels on branch finder
+//   21. Skip link is available and keyboard focus moves on Tab
+//
+// Environment-conditional logic: only test 12 (Structured data) branches
+// on environment - it skips outright rather than failing if JSON-LD/
+// microdata isn't present, since that's the one check known to vary by
+// environment. Everything else reads its target from the configured
+// Playwright `baseURL` and applies identically regardless of environment.
+// ============================================================================
 
 function getConfiguredOrigin(testInfo) {
     const configuredBaseUrl = testInfo.project.use.baseURL;

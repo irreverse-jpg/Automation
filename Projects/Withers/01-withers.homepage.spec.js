@@ -1,5 +1,58 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - withersworldwide.com homepage ("/")
+// ============================================================================
+// Scope: the homepage only - hero/title, scroll behaviour, header
+// navigation links, key body sections (Recent insight, Find a
+// professional, Get in touch), and the multi-language switcher (7
+// languages).
+//
+// Tests in this file:
+//   1. Homepage - Homepage Loads
+//      Loads "/" and checks the page title.
+//   2. Homepage - Scrolling Through the Page
+//      Scrolls to the footer, back to the top, and to the middle, checking
+//      scroll position at each step.
+//   3. Homepage - Navigate Various Pages from the Header Links
+//      Clicks each header link (Contact, Newsroom, Insight, Home) and
+//      confirms it lands on the expected URL.
+//   4. Homepage - Navigate Various Pages from the Body Links
+//      Opens 2 of the 3 "Recent insight" article links (confirming each
+//      navigates away and back), follows "Find a professional" to the
+//      People page, and confirms the "Get in touch" section's "Send an
+//      enquiry" link/href and its Phone button reveals the firm's number.
+//   5. Homepage - Language Switcher
+//      Confirms all 7 expected language options are present, switches to
+//      each of Français/Italiano/Español/日本語/繁體中文/简体中文 in turn
+//      (confirming URL + title), then back to English.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// The header/menu-opening helpers are notably more defensive than other
+// projects' (multiple fallback strategies for finding the menu
+// button/checkbox/label, retry-based homepage navigation) - this reflects
+// genuine cross-viewport/responsive-header quirks on this site rather than
+// unnecessary complexity, not something to simplify away.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
 

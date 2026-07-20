@@ -1,5 +1,67 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Mortgage Products (/mortgages/mortgage-products)
+// ============================================================================
+// Scope: the mortgage products/calculator page - title/H1/breadcrumb
+// chrome, the mortgage-search calculator across all 4 "I'm looking to"
+// scenarios, filtering/sorting results, and a mortgage product's own
+// details page (section pills, accordions, and the enquiry-form CTA).
+//
+// Tests in this file:
+//   1. Mortgages - Initial Page Load Checks
+//      Verifies title/H1/breadcrumb and the "Search our mortgage deals"
+//      calculator heading.
+//   2. Mortgages - No Results Scenario
+//      Submits an impossible property value/deposit combination and
+//      confirms the "No results found" heading.
+//   3. Mortgages - Buy my first home scenario
+//   4. Mortgages - Remortgage scenario
+//   5. Mortgages - Move home scenario
+//      Each submits its own scenario's criteria and confirms the matching
+//      "Results for..." heading.
+//   6. Mortgages - Filter and Sorting Results
+//      Runs a first-home search, applies 3 filters (Fixed, 2 years, no
+//      product fee), sorts by lowest monthly repayment, confirms the
+//      visible results are actually sorted low-to-high, then clears all
+//      filters and confirms they're unchecked again.
+//   7. Mortgages - Access and Navigate a Mortgage Product Details Page
+//      Opens the first result's own details page, confirms its H1 matches
+//      the card it was opened from, clicks through all 4 section pills
+//      (confirming the URL hash and target section each time), expands
+//      then collapses all 4 "Detailed information" accordions, and follows
+//      the "Make an enquiry" CTA to the mortgage enquiry form (05-pbs.forms.spec.js)
+//      and back.
+//   8. Mortgages - Access a Mortgage Product Details Page After Filters and
+//      Sorting
+//      Same details-page access check as above, but starting from a
+//      filtered + sorted result set rather than the unfiltered default.
+//
+// Known issue: tests 6-8 (filtering/sorting and the two product-details
+// tests) are documented as failing on Live because the search criteria used
+// don't return any results there - kept in the suite as real, currently-
+// failing coverage rather than removed, since they pass against other
+// environments and the underlying page/component logic they exercise is
+// still worth testing.
+// ============================================================================
+
 // Cookie Selector (If there is one)
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#CybotCookiebotDialogBodyUnderlay, #CybotCookiebotDialog, #onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-consent-sdk';

@@ -1,4 +1,62 @@
 const { test, expect, request } = require('@playwright/test');
+
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Careers (/careers) hub + Meet Our People, Our Story, and
+// the Recruitment Enquiries form
+// ============================================================================
+// Scope: the Careers hub page AND 3 pages it links onward to (Meet Our
+// People, Our Story, Recruitment Enquiries), including a full real form
+// submission on the last one.
+//
+// Tests in this file (11 total):
+//   1. Careers - Initial Page Load Checks - title/hero.
+//   2. Careers - Career Opportunities and Global Opportunities
+//   3. Careers - Supporting Links, Feature Panel, Quote Carousel, and Get
+//      To Know Us
+//   4. Careers - Our Clients Logo Carousel Links - every logo's linked
+//      destination checked for HTTP 200, not clicked.
+//   5. Careers - Diversity And Inclusion, Candidate Centre, and Footer
+//   6. Careers - Meet Our People - Traversal
+//   7. Careers - Our Story - Traversal
+//   8. Careers - Recruitment Enquiries - Traversal (the page itself,
+//      structure/content only, no form submission)
+//   Careers - Recruitment Enquiries - Form (test.describe, 3 tests):
+//   9. Validate When All Fields Empty - confirms the Enquiry field is
+//      flagged invalid with a "Please enter a value." message.
+//   10. Validate Partial Submission - fills only Email/Enquiry, confirms
+//       the form stays unsubmitted but Enquiry's own invalid state clears.
+//   11. Validate Successful Submission - fills every field with data
+//       derived from a persisted submission counter
+//       (`submissionCounter.js`/`submission-counter.txt`, counter key
+//       `'careers-recruitment-enquiries'`), waits for a REAL Google
+//       reCAPTCHA to be solved manually in the browser, submits, confirms
+//       the success message, and advances the counter. This test SKIPS
+//       outright in headless runs (`testInfo.project.use?.headless !==
+//       false`) since manual reCAPTCHA solving needs a headed session -
+//       it isn't a failure, it's an expected skip unless run headed.
+//
+// No baseURL-environment-conditional logic exists in this file - every
+// check applies identically regardless of which environment `baseURL`
+// points at. The one real conditional branch (headless vs. headed) gates
+// on the browser launch mode, not on environment.
+// ============================================================================
 const { getCurrentSubmissionNumber, incrementSubmissionNumber } = require('./submissionCounter');
 
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';

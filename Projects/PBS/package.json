@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.2",
-    "@playwright/test": "^1.42.0"
+    "@playwright/test": "^1.42.0",
+    "exceljs": "^4.4.0"
   }
 }

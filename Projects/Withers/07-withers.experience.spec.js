@@ -1,5 +1,67 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Experience (/experience) + every Practice Area page
+// ============================================================================
+// Scope: the Experience hub page (practice areas listing, "How we help",
+// "Areas of focus", final CTA/footer) AND every individual practice-area
+// page it links to (10+ pages, discovered dynamically from the hub - not
+// hardcoded, so this adapts automatically if practice areas are
+// added/removed/renamed).
+//
+// Tests in this file:
+//   1. Experience - Initial Page Load Checks
+//      Verifies title/H1/hero "Get in touch" CTA.
+//   2. Experience - Practice Areas Listing
+//      Confirms the "Our practice areas" section lists more than 10 items.
+//   3. Experience - How We Help
+//      Confirms exactly 3 "Find out more" panels.
+//   4. Experience - Areas Of Focus Listing
+//      Confirms the "Areas of focus" section lists more than 10 items.
+//   5. Experience - Final CTA and Footer
+//      Confirms the lower "Get in touch" panel/CTA and the footer beneath it.
+//   6. Experience - Practice Area Links - Open the Expected Practice Pages
+//      Opens EVERY discovered practice-area link in turn, confirming each
+//      has a real, non-empty hero H1 and its "On this page" nav exposes
+//      all 5 required tabs (Overview, Track Record, Our team, Insight, Get
+//      In touch) with Overview active by default.
+//   7. Experience - Practice Area - Track Record Anchors and Filters Work
+//      Across the Practice Pages
+//      On every practice page, jumps to the Track Record anchor and (where
+//      filter tabs exist) confirms "All" is active by default and each
+//      filter tab activates correctly when clicked.
+//   8. Experience - Practice Area - Our team, Insight, and Get in Touch
+//      Sections are Present Across the Practice Pages
+//      On every practice page, jumps to each of those 3 anchors in turn
+//      and confirms their content (team profile cards + optional "View
+//      all" link, Insight cards + optional "Show more", the Get in touch
+//      CTA) and that the footer sits below the last panel.
+//
+// Runtime note: tests 6-8 each loop over every discovered practice page
+// (10+), so this file is one of the slower ones in this project by design
+// - `test.describe` sets a 10-minute timeout to accommodate the full sweep.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
 const EXPERIENCE_PATH = '/experience';

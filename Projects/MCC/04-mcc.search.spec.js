@@ -1,5 +1,60 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - lords.org site search
+// ============================================================================
+// Scope: both search entry points (the header overlay opened via the search
+// icon, and the inline search box on the results page itself) plus the
+// results page's site filter and sort controls.
+//
+// Tests in this file:
+//   1. Search - Empty Query
+//      Submits an empty search from the header overlay and confirms the
+//      "0 Results for" state with no result articles rendered.
+//   2. Search - With and Without Results
+//      Searches a nonsense term (0 results) via the header overlay, then
+//      refines from the results page's own inline search box with a term
+//      that does match, confirming the count/heading update correctly.
+//   3. Search - Navigate Through Results
+//      Searches "test", filters by site (Lords/MCC/All Sites, confirming
+//      the per-site counts sum to the All Sites total), then sorts by
+//      Posted (newest)/(oldest), confirming the result order changes.
+//
+// Currently-confirmed content quirks (re-verified 2026-07-16, present on
+// BOTH Live and UAT2 - not environment-specific):
+//   - The "Posted (oldest)" sort option renders with a stray leading
+//     backtick in its label (a minor content defect) - handled via a
+//     substring match rather than failed on.
+//   - The inline results-page search box submits its term as "searchtext"
+//     (lowercase) and carries the current site filter as "index=", while
+//     the header overlay uses "searchText" - a minor param-naming
+//     inconsistency between the two entry points, not a defect.
+//
+// The header search overlay's submit button was previously documented as
+// partially covered by the sticky header on UAT2 - confirmed as of
+// 2026-07-16 this is no longer reproducible on either environment (the
+// button is fully clickable at its own center on both); the defensive
+// off-center click position is kept in the code anyway, see the comment
+// on `submitHeaderSearch` below.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 function buildExpectedUrl(baseURL, path) {
@@ -79,16 +134,16 @@ async function openHeaderSearchOverlay(page) {
     return input;
 }
 
-// The header search overlay's submit button is partially covered by the sticky header/logo bar on
-// UAT2 - a known cosmetic issue (already reported, fixed on other environments, slated for the next
-// release). Only the lower portion of the button is actually reachable by a real pointer, so click
-// there instead of the default center, which lands on the header behind it.
+// The header search overlay's submit button was previously reported as partially covered by the
+// sticky header/logo bar - confirmed as of 2026-07-16 this is no longer reproducible on either
+// Live or UAT2 (the button is fully clickable at its own center on both). The off-center click
+// position is kept anyway as a harmless defensive measure rather than reverted to a plain click.
 async function submitHeaderSearch(page, term) {
     const input = page.locator('#navsearch');
     await input.fill(term);
 
     // Tablet/mobile hide the "Search" button entirely below the desktop breakpoint (submit is
-    // expected via Enter there); desktop shows it but partially behind the header (see note above).
+    // expected via Enter there); desktop shows and can click it directly (see note above).
     const submit = page.locator('.nav-search__submit');
     const box = await submit.boundingBox();
     if (box) {
@@ -139,8 +194,9 @@ async function selectDropdownOption(page, dropdown, optionText) {
     await clickWithCookieGuard(page, trigger);
 
     // Substring match rather than exact text: the "Posted (oldest)" option renders with a stray
-    // leading backtick in its label on UAT2 (a separate minor content defect) - matching on the
-    // clean substring keeps this test focused on sort behaviour rather than label spelling.
+    // leading backtick in its label - confirmed as of 2026-07-16 present on BOTH Live and UAT2 (not
+    // UAT2-only as previously documented), a genuine minor content defect - matching on the clean
+    // substring keeps this test focused on sort behaviour rather than label spelling.
     const option = dropdown.locator('.dropdown-item').filter({ hasText: optionText }).first();
     await expect(option, `Dropdown option "${optionText}" should be visible once expanded`).toBeVisible();
 

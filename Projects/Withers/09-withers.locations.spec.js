@@ -1,5 +1,85 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Locations (/locations) + every regional and office page
+// ============================================================================
+// Scope: the Locations hub (office accordions by region, regional
+// experience cards) AND every individual regional-experience page (8) and
+// office page (15, across Asia Pacific/Europe/North America) it links to -
+// all generated from fixed lists at the top of this file (OFFICE_ACCORDIONS,
+// REGIONAL_EXPERIENCE_LINKS, REGIONAL_PAGE_DETAILS, and the 3
+// *_OFFICE_DETAILS arrays), not discovered dynamically - if a real office
+// or region is added/removed, these lists need a matching update.
+//
+// Tests in this file (26 total):
+//   1. Locations - Initial Page Load Checks
+//      Verifies title/hero heading and the hero's "Get in touch" CTA.
+//   2. Locations - Office Accordions Expand, Collapse, and Expose the
+//      Office Links
+//      Opens each of the 3 office accordions (Asia Pacific, Europe, North
+//      America) in turn, confirming each one auto-collapses the previous
+//      one (single-open behaviour) and lists its expected office links
+//      with a hover-arrow effect, then collapses the last one.
+//   3. Locations - Regional Experience Links and Footer Are Present
+//      Confirms the "Our regional experience" section exposes exactly the
+//      8 expected region cards (order-independent) and the footer sits below.
+//   4-11. Locations - Regional Experience Page [Africa/Middle East/Latin
+//      and South America/Asia Pacific/North America/Indian Subcontinent/
+//      Europe/Russia, Ukraine and the CIS] (8 tests, one per region)
+//      Opens each regional page and checks its hero, Track Record section
+//      (Show more reveals additional panels), Experience section (if
+//      present, each link's hover effect), Our team section (card count
+//      1-8, flip-hover effect, and - depending on the region's configured
+//      `teamMode` - either no expansion control, a "View all" link that
+//      routes to a pre-filtered People page, or a "Show more" that reveals
+//      more cards in place), Insight section (default or the 2-panel
+//      "Latin" variant), and the lower Get in touch section/footer.
+//   12-19. Locations - Asia Pacific Office Page [Hong Kong/Singapore/Tokyo]
+//      (3 tests)
+//   20-23. Locations - Europe Office Page [Geneva/Milan/Padua/London]
+//      (4 tests)
+//   24-26+. Locations - North America Office Page [British Virgin Islands/
+//      New Haven/San Diego/Greenwich/New York/San Francisco/Los Angeles/
+//      Texas] (8 tests)
+//      Each office test opens its accordion, follows its office link,
+//      checks the hero (heading/address/mailto/tel), the optional "Read
+//      more" intro-copy expansion (per-office `hasReadMore` flag), the
+//      "Meet the team" section + its "View all" link routing to a
+//      pre-filtered People page, the office contact panel (phone reveal or
+//      direct tel link + email), the directions PDF panel (link format
+//      differs slightly by region - see `verifyDirectionsPdfPanel` vs
+//      `verifyOfficeDirectionsPanel`), the footer, then goes back to the
+//      Locations page.
+//
+// Viewport-conditional logic (not environment-conditional): regional pages
+// only verify animated hover effects (`verifyAnimatedHover`) when
+// `window.matchMedia('(hover: hover)')` reports true - touch viewports
+// skip the animation checks and fall back to structural presence only.
+//
+// No baseURL-environment-conditional logic exists in this file - every
+// check applies identically regardless of which environment `baseURL`
+// points at. Runtime note: this file generates 26 tests from fixed
+// location/office lists, each doing a real multi-section page traversal -
+// expect it to be one of the slower files in this project.
+// ============================================================================
+
 const LOCATIONS_PATH = '/locations';
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';

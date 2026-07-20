@@ -1,5 +1,60 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - lords.org main navigation ("meganav")
+// ============================================================================
+// Scope: the site-wide meganav (desktop bar / tablet & mobile hamburger
+// accordion) and the header logo link that sits alongside it. Not scoped to
+// any single page - these tests open the homepage first, then drive the menu
+// from there.
+//
+// Tests in this file:
+//   1. Meganav - Verify Meganav is Present
+//      Confirms the meganav and its root level are visible and expose at
+//      least one item.
+//   2. Meganav - Verify Header Logo is Present
+//      From a non-homepage page, confirms the header logo is visible and
+//      clicking it returns to the base URL with the meganav visible again.
+//   3. Meganav - Expand Each of the Meganav Links
+//      Expands every root-level item with children, and every second-level
+//      item with children beneath it, checking the revealed sublist is
+//      visible. On desktop only, also checks the expanded root item's link
+//      gets a solid yellow "current" background (rgb(255, 200, 0)) and that
+//      a previously-active root loses it once a different one is expanded -
+//      confirmed via a real screenshot + getComputedStyle, not assumed.
+//      Tablet/mobile (hamburger-driven) have no equivalent visual cue, so
+//      this check is skipped there.
+//   4. Meganav - Navigate Through Every First, Second and Third Level Item
+//      Reads the entire menu tree fresh at test start (never hardcodes menu
+//      labels or destination paths, since both have drifted before and will
+//      differ again between Live/UAT2 or future releases) and clicks every
+//      well-formed leaf link, confirming each one actually navigates
+//      somewhere real (new tab for `target="_blank"` items, a changed URL
+//      plus a visible H1 or non-empty title otherwise).
+//
+// No environment-conditional logic or currently-confirmed Live-vs-UAT2
+// content differences exist in this file as of 2026-07-16 - the whole-tree,
+// read-fresh approach means it adapts to menu/label/path changes on either
+// environment automatically rather than needing per-environment maintenance.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 // Confirmed via a real screenshot + getComputedStyle, not assumed: clicking a main-level meganav

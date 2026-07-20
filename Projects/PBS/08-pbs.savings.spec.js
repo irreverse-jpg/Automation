@@ -1,5 +1,56 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Compare Savings Accounts (/home/savings/savings-accounts)
+// ============================================================================
+// Scope: the savings accounts comparison page - title/H1/breadcrumb chrome,
+// the results/no-results states, filtering and sorting, and a savings
+// product's own details page.
+//
+// Tests in this file:
+//   1. Savings Accounts - Initial Page Load Checks
+//      Verifies title/H1/breadcrumb and the "Good news! We've found N..."
+//      results heading, confirming N is a real number >= 1.
+//   2. Savings Accounts - No Results Scenario
+//      Applies 2 contradictory filters (Regular saver + One lump sum) and
+//      confirms either an explicit "No accounts found"/"0 savings
+//      accounts" state (with a working "View all savings accounts" reset)
+//      or, if the site doesn't show that explicit state, removes the
+//      filters directly - then confirms results are available again.
+//   3. Savings Accounts - Filter and Sorting Results
+//      Applies 3 filters (ISA, One lump sum, Open online) and confirms
+//      every visible card matches; confirms the default sort is by
+//      interest rate (high to low), switches to sort by opening deposit,
+//      and confirms that sort order (low to high) too.
+//   4. Savings Accounts - Access a Savings product Details Page
+//      Opens the first result's "More info" link and confirms the
+//      destination H1 matches the card it came from.
+//   5. Savings Accounts - Access a Savings Product Details Page After
+//      Filters and Sorting
+//      Same details-page access check as above, but starting from a
+//      filtered + sorted result set rather than the unfiltered default.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const SAVINGS_URL = '/home/savings/savings-accounts';
 const COOKIE_ACCEPT_SELECTOR =
     'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';

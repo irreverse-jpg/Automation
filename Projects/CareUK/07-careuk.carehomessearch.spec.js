@@ -1,5 +1,62 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Find a Care Home search (/care-homes)
+// ============================================================================
+// Scope: the care home search/results page - the postcode + care-type
+// search form, the results list, the Google Map and its pins, and the
+// map/list correlation.
+//
+// Tests in this file:
+//   1. Care Homes Search - Initial Page Checks
+//      Verifies URL/title/H1, the search input/care-type dropdown/Submit
+//      button (Reset only checked if currently visible - it can be
+//      conditionally hidden until the first search interaction), the care
+//      type dropdown's option count/contents, the map container, and that
+//      the initial listing renders real care-home items.
+//   2. Care Homes Search - Postcode and Care Type Filtering Logic
+//      Searches "M33" + Residential care, confirms results still render
+//      and the page shows a real UK postcode.
+//   3. Care Homes Search - Map Pins Match Listing Names
+//      Same M33 + Residential care search, then cross-checks that at
+//      least one map pin's label matches a listing card's name and that
+//      the matched pin is hoverable.
+//   4. Care Homes Search - Exhaustive M33 Map and Filter Traversal
+//      The most thorough test in this file: searches M33 via the real
+//      typeahead suggestion list, samples 5 map pins (indices 1/3/5/7/9)
+//      and confirms clicking each brings that home to the top of the
+//      list, clicks "Show more" twice (confirming the list grows both
+//      times, reaching >=29 homes), samples 3 more pins from the expanded
+//      list, opens the first card's "Read more" toggle then its "View
+//      Home" detail page and back, then cycles through EVERY care-type
+//      dropdown option, confirming each one's matching service icon shows
+//      as a purple "yes" check (`rgb(215, 8, 139)`) on every visible
+//      result card (plus a further Show More check per filter, if
+//      available).
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// Runtime note: test 4 is deliberately thorough (300-second timeout) and
+// is one of the slower tests in this project.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 function normalizeWhitespace(value) {

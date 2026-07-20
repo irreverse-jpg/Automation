@@ -1,5 +1,47 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Branch Finder (/home/contact-us/branch-finder)
+// ============================================================================
+// Scope: the branch finder page - title/H1/breadcrumb chrome, the
+// city/postcode search box, selecting a result, and the empty-results case.
+//
+// Tests in this file:
+//   1. Branch Finder - Initial Page Load Checks
+//      Verifies the title, H1, and breadcrumb trail (Contact us > Branch
+//      Finder).
+//   2. Branch Finder - Use Branch Finder Search Functionality
+//      Searches "Cardiff" and confirms the "Results for: Cardiff" heading
+//      appears.
+//   3. Branch Finder - Select a Branch from the Search Results
+//      Searches "Cardiff", opens the first "View branch details" result,
+//      confirms it navigates to a real branch details page with its own H1.
+//   4. Branch Finder - Shows empty results list for invalid search
+//      Searches a nonsense location and confirms zero "View branch
+//      details" links are returned (while the generic results heading
+//      still appears).
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 // Cookie Selector (If there is one)
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 async function acceptCookiesIfPresent(page) {

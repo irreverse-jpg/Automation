@@ -1,5 +1,90 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - About (/about) hub + 7 About sub-sections
+// ============================================================================
+// Scope: the About hub page AND 7 of its sub-pages, each in its own
+// `test.describe` block: Responsible Business, Sustainable Development
+// Goals, Diversity/equity and inclusion, Key facts/key stats,
+// Environmental Responsibility, Our clients, and Our pro bono commitment.
+// The largest file in this project by line count.
+//
+// Tests in this file (30 total):
+//   About hub page (6 tests):
+//   1. About - Initial Page Load Checks - title/hero.
+//   2. About - Pages In This Section - Links Hover and Further Information
+//      Accordion Toggle
+//   3. About - Shaping the Future Together - H2 Heading
+//   4. About - Shaping the Future Together - Video and CTA Work - plays a
+//      Vimeo video (fullscreen toggle + pause), follows the "Defining
+//      moments" interview CTA to its Insight page and back.
+//   5. About - Recent Global Recognition Carousel - Navigates - 4 clicks
+//      forward, 2 back.
+//   6. About - Senior Management Team - Cards, Lower Contact CTA, and
+//      Footer - hovers management cards, opens the last visible profile.
+//
+//   About - Page Section - Responsible Business (7 tests): Initial Page
+//   Checks; Pages in this Section links hover + navigate (2 tests); "In
+//   Partnership with" carousel (4 left, 2 right); Achieving Social Impact
+//   video interactions + its H2 heading (2 tests); Key Contacts/
+//   testimonials/footer.
+//
+//   About - Page Section - Sustainable Development Goals (2 tests):
+//   Initial Page Checks; Contacts and Footer.
+//
+//   About - Page Section - Diversity, equity and inclusion (3 tests):
+//   Initial Page Checks; Featured Panels; Contacts/Partners/Insight/Footer
+//   (includes a diversity-partners carousel and Insight card hover checks).
+//
+//   About - Page Section - Key facts / key stats (3 tests): Initial Page
+//   Checks; Roundel Panels (2 stat panels, 6 roundels in the first); Media
+//   Enquiries and Footer.
+//
+//   About - Page Section - Environmental Responsibility (3 tests): Initial
+//   Page Checks; In-Section Links and Policy Links (a PDF link checked
+//   without downloading it, plus live partner/association icon links);
+//   Team Cards and Footer.
+//
+//   About - Page Section - Our clients (3 tests): Initial Page Checks;
+//   Logo Carousel Links (every logo's linked destination checked for
+//   HTTP 200, not clicked); Feature Grids/Quote Carousel/Footer (2 feature
+//   grids with "Find out more" hover + detail-page drilldowns, a lower
+//   quote carousel).
+//
+//   About - Page Section - Our pro bono commitment (3 tests): Initial Page
+//   Checks (title/H1/breadcrumb/policy heading); Partnerships and Video
+//   (a logo carousel + video controls + a link beneath the video);
+//   Contacts/Insight/Footer.
+//
+// A recurring pattern across most sub-pages: wherever a "Key Contacts"/
+// "Our team"/"Media enquiries" people-card section appears, the test opens
+// the LAST visible profile card (not the first) to drill into a profile
+// page - deliberately varying which card is sampled across this project's
+// people-adjacent tests rather than always picking the first.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// Runtime note: this is the largest file in this project (2200+ lines, 30
+// tests across 8 distinct pages) - expect it to be one of the slower ones.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
 

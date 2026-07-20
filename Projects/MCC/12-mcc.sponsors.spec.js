@@ -1,9 +1,62 @@
 const { test, expect } = require('@playwright/test');
 
-// This spec covers the Our Partners page (/information/sponsors), accessed directly by URL rather
-// than via the footer sponsors logo (that click-through is deliberately out of scope here - the
-// footer block itself, including its known UAT2 broken-image defect, is still checked at the end of
-// this file via the same verifySponsorsAndFooter helper used across the other specs in this project).
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// COVERAGE NOTES - Sponsors / Our Partners page (/information/sponsors)
+// =======================================================================
+//
+// What this file covers:
+// - The "Our Partners" page, accessed directly by URL (there is no menu-driven route to it - see
+//   "Why standalone" below). Renumbered from 07 to 12 as part of the 2026-07 meganav reorg (see
+//   project memory).
+// - The footer sponsors block (logo link on desktop, "View our partners" link on mobile/tablet) is
+//   also checked at the bottom of the test via the shared verifySponsorsAndFooter helper used across
+//   the other specs in this project. Actually clicking through from the footer link is out of scope
+//   here - this file always opens the page directly by URL instead.
+//
+// Why standalone: this page has no entry anywhere in the current meganav tree (top-level or nested) -
+// it's purely footer-linked utility content, so it stays its own direct-goto file rather than living
+// inside one of the menu-driven files.
+//
+// Test list (single test, broken into steps):
+// - "Sponsors - Our Partners Page Checks"
+//   1. Open the page directly and verify the H1
+//   2. Verify the page title (environment-aware: UAT2 uses a generic env title on every page)
+//   3. Verify the Principal Partner section (Barclays - pinned by name, since it's consistent
+//      across environments)
+//   4. Verify the Partners & Suppliers section (flexible - iterates over however many cards exist,
+//      by name, without hardcoding the roster)
+//   5. Verify the Partnership Opportunities section (Get in Touch mailto link)
+//   6. Scroll to the bottom and verify the sponsors block / footer
+//
+// Re-verified 2026-07-16, after the broader Live -> UAT2 content sync:
+// - The partner roster is now IDENTICAL on both environments (13 named cards: Barclays, Asahi UK,
+//   CGI, Vitality, Hendrick's Gin, Majestic Wines, Guinness, Veuve Clicquot, Westons - Stowford
+//   Press, BT, Re:Water, Destination Sport, The PCA). The previously-documented UAT2-vs-Live roster
+//   difference (UAT2 showing BrewDog where Live showed Asahi UK) no longer reproduces - that was
+//   resolved by the sync.
+// - The previously-documented 2 blank placeholder `<h5>&nbsp;</h5>` slots on UAT2 are also gone -
+//   0 blank headings found on UAT2 as of this date. The filtering-out-blank-h5s logic in
+//   extractPartnerCards() is kept as a defensive no-op in case blank placeholders reappear, but it is
+//   not currently exercised by real page content on either environment.
+// - The Partners & Suppliers section is still deliberately NOT hardcoded to a specific roster (only
+//   generic per-card checks), since Hector expects this list to keep changing over time even now that
+//   the two environments match.
 
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
@@ -81,9 +134,11 @@ async function verifySponsorsAndFooter(page) {
 //    earlier, unrelated card's container). This makes per-card containment (`closest()`) unreliable,
 //    so cards are paired by flat document order instead (every <h5> is a name, the next
 //    "Find Out More" button belongs to it), which works regardless of the nesting bug.
-// 2. UAT2 currently has 2 completely blank `<h5>&nbsp;</h5>` placeholder headings mixed in among the
-//    real ones (confirmed: no name text, and no matching button follows them at all) - filtered out
-//    before pairing so they're silently skipped rather than corrupting the H5/button alternation.
+// 2. UAT2 previously had 2 completely blank `<h5>&nbsp;</h5>` placeholder headings mixed in among the
+//    real ones (no name text, and no matching button follows them at all) - re-verified 2026-07-16
+//    that these are gone post-sync (0 blank headings found on either environment now). The filter
+//    below is kept as a defensive no-op in case blank placeholders reappear, silently skipping any
+//    blank heading rather than letting it corrupt the H5/button alternation.
 async function extractPartnerCards(page) {
     return page.evaluate(() => {
         const candidates = Array.from(document.body.querySelectorAll('h5, a.button'))
@@ -157,10 +212,12 @@ test('Sponsors - Our Partners Page Checks', async ({ page, baseURL }) => {
     await test.step('Verify the Partners & Suppliers section (flexible - the exact partner list differs by environment)', async () => {
         await expect(page.getByRole('heading', { level: 2, name: /partners (&|and) suppliers/i }).first(), 'The page should show the Partners & Suppliers heading').toBeVisible();
 
-        // Per Hector: the roster here genuinely differs between UAT2 and Live (e.g. UAT2 currently
-        // lists BrewDog where Live lists Asahi UK) and will keep changing - deliberately not
-        // hardcoding names. Every card found (however many, whatever their names) gets the same
-        // check: a real heading, and a Find Out More button whose destination isn't dead.
+        // Re-verified 2026-07-16: the roster here is now identical on both environments (13 named
+        // cards on Live and UAT2 alike), resolving the previously-documented UAT2-vs-Live difference
+        // (UAT2 used to list BrewDog where Live listed Asahi UK). Per Hector, this list is still
+        // expected to keep changing over time, so names are deliberately not hardcoded. Every card
+        // found (however many, whatever their names) gets the same check: a real heading, and a Find
+        // Out More button whose destination isn't dead.
         const cards = await extractPartnerCards(page);
         const suppliers = cards.slice(1);
 

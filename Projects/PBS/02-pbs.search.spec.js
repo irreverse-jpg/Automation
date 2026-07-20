@@ -1,5 +1,54 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - principality.co.uk site search
+// ============================================================================
+// Scope: the header search box (desktop or mobile, whichever is visible)
+// and the search results page's pagination, category/media filters, and
+// filter-clearing controls.
+//
+// Tests in this file:
+//   1. Search - Empty Query
+//      Submits an empty search and confirms the browser's native
+//      required-field validation message appears.
+//   2. Search - With and Without Results
+//      Searches a nonsense term (No results found heading) then "mortgage"
+//      (real results heading), confirming the URL/heading each time.
+//   3. Search - Pagination of Results
+//      Opens a multi-page results view directly by URL and follows the
+//      page 2 link, confirming the pageNumber query param updates.
+//   4. Search - Filter Results
+//      Searches "savings", toggles the "Everyday finance" category filter
+//      on/off, then applies 2 media + 2 category filters together,
+//      confirming the URL's query params update correctly each time.
+//   5. Search - Remove Filters Applied One by One
+//      Opens a pre-filtered results URL directly and removes each filter
+//      individually, confirming the query params shrink correctly.
+//   6. Search - Remove All Filters Applied at Once
+//      Opens a pre-filtered results URL directly and uses "Clear all",
+//      confirming it returns to the unfiltered results URL.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 // Cookie Selector (If there is one)
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#CybotCookiebotDialogBodyUnderlay, #CybotCookiebotDialog, #onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-consent-sdk';

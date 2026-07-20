@@ -1,5 +1,51 @@
 const { test, expect } = require('@playwright/test');
+
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
 const { getCurrentSubmissionNumber, incrementSubmissionNumber } = require('./submissionCounter');
+
+// ============================================================================
+// Coverage notes - Contact Form (/contact-us)
+// ============================================================================
+// Scope: the contact enquiry form - presence, empty/partial validation,
+// and a full real submission (no reCAPTCHA on this form, unlike some of
+// the other projects' forms - so this one runs fully unattended).
+//
+// Tests in this file:
+//   1. Contact Form - Verify it is Present
+//      Confirms the page/title and the key fields (First name, Last name,
+//      Email address, Country, Enquiry) are visible.
+//   2. Contact Form - Validate When All Fields Empty
+//      Submits with every field empty and confirms the form stays on the
+//      page with a "Please enter a value." validation message.
+//   3. Contact Form - Validate Partial Submission
+//      Fills only Email address, submits, confirms it's still blocked
+//      with at least one validation message.
+//   4. Contact Form - Validate Successful Submission
+//      Fills every field with data derived from a persisted submission
+//      counter (`submissionCounter.js`/`submission-counter.txt`, counter
+//      key `'contact-us'` - shared across this project's other forms via
+//      the same file, kept distinct per-form by key), rotating
+//      region/country/enquiry text, submits, confirms a success
+//      acknowledgement, and advances the counter.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
 
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';

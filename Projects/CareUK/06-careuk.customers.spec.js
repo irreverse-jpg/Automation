@@ -1,4 +1,74 @@
 ﻿const { test, expect } = require('@playwright/test');
+
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Customers (/customers) hub + Payments, Help & Advice,
+// Contact forms, Leave Your Feedback, and Year in Review
+// ============================================================================
+// Scope: the Customers hub page plus 5 destinations it links to: Online
+// Payments (a real form), Help and Advice (article filtering), the
+// Contact page's 2 separate forms (Request a callback, Give us your
+// feedback), Leave Your Feedback (videos/carousel/postcode search/its own
+// form), and the "Year in Review" CTA.
+//
+// Tests in this file (7 total):
+//   1. Customers - Initial Page Checks - title/H1 + footer/TOP button.
+//   2. Customers - Online Payments Traversal - opens via "MAKE A
+//      PAYMENT", submits blank (validation) and partially-filled
+//      (validation) forms, then expands the FAQ accordions one by one
+//      (single-open behaviour).
+//   3. Customers - Help and Advice Traversal - title/breadcrumb/H1/default
+//      category, "Show more" pagination on the All category (opens one
+//      random resulting article), a category that deliberately produces a
+//      no-results state (Resident story), and a category with real
+//      results (Dementia advice).
+//   4. Customers - Request a Callback Form Traversal - the first of 2
+//      forms on the Contact page: empty-submission validation, progressive
+//      field-by-field validation clearing, then a REAL submission gated on
+//      manually solving Google reCAPTCHA.
+//   5. Customers - Contact Us Feedback Form Traversal - the second form on
+//      the same Contact page ("Give us your feedback"), same 3-journey
+//      shape (empty validation, progressive clearing, real reCAPTCHA-gated
+//      submission).
+//   6. Customers - Leave Your Feedback Traversal - tests 9(!) videos on
+//      the page (play/fullscreen/exit/pause/close each), the "Our recent
+//      reviews" carousel roundel navigation, a "Your nearest care home"
+//      postcode search, footer/TOP, then a 3rd form on this same page
+//      (blank submission does nothing, progressive field-by-field
+//      clearing, reCAPTCHA gate).
+//   7. Customers - Year In Review Traversal - locates the "A look back at
+//      our year" CTA and validates its target BY ENVIRONMENT (see below).
+//
+// Confirmed CURRENT environment difference (real, not a test bug):
+//   - The "Take a look back at our year" CTA's target is confirmed 404 on
+//     UAT2 as of writing, while on Live (careuk.com/www.careuk.com) it
+//     correctly resolves to a real PDF (year-in-review-2025.pdf, 200,
+//     content-type PDF). Test 7 branches explicitly on `baseURL`'s
+//     hostname to assert the correct expectation per environment rather
+//     than picking one and failing on the other - any other/unknown
+//     environment is tolerated as either outcome.
+//
+// Runtime note: this file drives 3 separate real reCAPTCHA-gated form
+// submissions (Request a callback, Contact Us Feedback, Leave Your
+// Feedback's own form) - each needs a person present to solve the
+// checkbox when prompted to reach a genuine success state.
+// ============================================================================
 const { getCurrentSubmissionNumber, incrementSubmissionNumber } = require('./submissionCounter');
 
 const COOKIE_ACCEPT_SELECTOR = '#onetrust-accept-btn-handler, button:has-text("YES, ALLOW ALL"), button:has-text("Accept")';

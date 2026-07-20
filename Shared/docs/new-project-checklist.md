@@ -21,6 +21,7 @@ For workspace orientation and onboarding context, read `Shared/README.md` first.
 - `README.md` (optional)
 - `01-...` to `09-...` initial specs
 - `10-...load.k6.js` (if performance testing applies)
+- `reporters/findings-reporter.js` (see section 8 below)
 
 Before marking this section complete, verify the new project can run `npm test` locally.
 
@@ -53,7 +54,18 @@ Before marking this section complete, verify the new project can run `npm test` 
 - Keep generated outputs inside each project only when needed for debugging.
 - Remove root-level generated report folders from `Projects/` when they appear.
 
-## 8) VS Code Test Explorer troubleshooting (Playwright)
+## 8) Findings report (team-facing, non-technical)
+
+Every current project (MCC, PBS, Withers, CareUK) produces a plain-language findings spreadsheet after each test run, in addition to the standard Playwright HTML report, so results can be shared with non-technical teammates. Set this up for every new project:
+
+- Add `exceljs` as a devDependency: `npm install --save-dev exceljs`.
+- Copy `reporters/findings-reporter.js` from an existing project (e.g. `Projects/MCC/reporters/findings-reporter.js`) and update its `FRIENDLY_FILE_NAMES` map to the new project's own spec files, plus the `HEADER_TITLE`/`creator` strings.
+- Register it in `playwright.config.js`: `reporter: [['html'], ['./reporters/findings-reporter.js']]`.
+- Add a small `test.afterEach` hook to the top of every spec file (right after the `require('@playwright/test')` line) that attaches a `failure-context` JSON blob (`url`, `pageTitle`, `environment`, `viewport`) on failure — copy this verbatim from any existing project's spec file, since each project keeps it self-contained per file rather than importing it from a shared module.
+- Add `findings-report.xlsx` and `findings-reports/` to `.gitignore` — these are regenerated per run, not checked in.
+- Keep using a human-readable message as the 2nd argument to every `expect()` call (already the convention across all 4 projects) — the reporter surfaces that message as the finding's "why," so there's no separate explanation to maintain.
+
+## 9) VS Code Test Explorer troubleshooting (Playwright)
 
 Use this section when test Run/Debug buttons are missing, or when one workspace folder appears but another does not.
 

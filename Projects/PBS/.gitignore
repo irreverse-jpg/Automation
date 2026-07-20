@@ -3,3 +3,5 @@ playwright-report/
 test-results/
 .env
 k6-summary.json
+findings-report.xlsx
+findings-reports/

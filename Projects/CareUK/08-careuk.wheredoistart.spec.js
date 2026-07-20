@@ -1,4 +1,58 @@
 const { test, expect } = require('@playwright/test');
+
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Where Do I Start (/where-do-i-start) + About Our Care
+// Support Team (Request a Callback form)
+// ============================================================================
+// Scope: the "Where Do I Start" hub page (reached via the real menu, not a
+// direct URL) and its "About our care support team" destination page,
+// which hosts a real Request a Callback form.
+//
+// Tests in this file (10 total):
+//   1. Where Do I Start - Initial Page Checks
+//      Navigates via the menu (Where do I start second-level item),
+//      checks title/H1/breadcrumb semantics, follows the hero "Find a care
+//      home" CTA to /care-homes and back, checks the "Get in touch"
+//      section's "About our care support team" CTA and the "Help and
+//      advice" section's "Read more" CTA, then exercises the FAQ
+//      accordion (confirms collapsed-by-default, then expands each one by
+//      one confirming the previous auto-collapses), and finishes with the
+//      TOP button + footer.
+//   2-9. Eight generated "Traversal" tests (one per traversalScenarios
+//      entry: Do I Need Care, What is a Care Home, Choosing a Care Home,
+//      Booking a Viewing, Moving In, Support at a Stressful Time, What
+//      Affects Cost, What Does a Good Care Home Look Like) - each opens
+//      the destination directly and checks any video/FAQ-accordion/news-
+//      panel/nearest-home-search modules present, then the TOP control.
+//   10. Where Do I Start - Get in Touch Request a Callback Form Traversal
+//      On the "About our care support team" page: title/H1/breadcrumb,
+//      the hero "FIND A CARE HOME" button + back, any video module on the
+//      page, a "nearest care home" search (M33 + Residential care), the
+//      TOP control, then the Request a Callback form's full 3-journey
+//      shape (empty-submission browser validation, progressive per-field
+//      validation clearing, then a REAL submission gated on manually
+//      solving Google reCAPTCHA).
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
 const { getCurrentSubmissionNumber, incrementSubmissionNumber } = require('./submissionCounter');
 
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
@@ -776,6 +830,10 @@ const traversalScenarios = [
     {
         name: 'Where Do I Start - What Affects Cost Traversal',
         route: '/where-do-i-start/what-affects-cost',
+    },
+    {
+        name: 'Where Do I Start - What Does a Good Care Home Look Like Traversal',
+        route: '/where-do-i-start/what-does-a-good-care-home-look-like',
     },
 ];
 

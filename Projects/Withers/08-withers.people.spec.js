@@ -1,5 +1,82 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - People (/people) listing + individual profile pages
+// ============================================================================
+// Scope: the People directory (search, sort, A-Z filter, office/role/
+// practice/client-type filters, pagination) AND a deep dive into
+// individual profile pages sampled across the alphabet, not just one.
+// This is the largest/most thorough file in this project.
+//
+// Tests in this file (19 total):
+//   1. People - Initial Page Load Checks
+//      Verifies title/hero copy and that Search/Filter controls are visible.
+//   2. People - Search Summary and Sort Controls
+//      Confirms the results summary, the Sort by dropdown (defaults to
+//      "First name", offers "Last name"), and the full A-Z + "All"
+//      alphabet filter options (desktop list or mobile/tablet dropdown).
+//   3. People - Sticky Controls, Cards, Pagination and Footer
+//      Confirms Search/Filter stay visible while scrolling, the initial
+//      listing shows exactly 24 cards with correct pagination controls,
+//      and the footer sits beneath everything.
+//   4. People - Filter By Office Apply and Clear
+//      Opens the filter panel, selects one office (British Virgin
+//      Islands), applies it, then clears all filters and confirms the
+//      original 24-card listing is restored.
+//   5. People - Multi Filter Apply and Reverse Deselect
+//      A much larger version of the above: selects multiple offices,
+//      roles, practices, and client types (more combinations on desktop
+//      than on touch viewports - see below), applies them in stages, then
+//      deselects every filter one by one in reverse order (reapplying
+//      each time) and confirms the listing is fully restored at the end.
+//   6-18. People - Letter [C/E/G/I/K/M/O/Q/S/U/W/Z] - First/Second Filtered
+//      Profile Full Deep Checks (13 tests, one per sampled letter - not
+//      every letter A-Z, a deliberate spread across the alphabet)
+//      For each letter, filters the listing to that starting letter, opens
+//      one specific resulting profile, and runs the full deep-check suite
+//      on it: header (title/H1 match the name), contact controls (email
+//      mailto, "Call - Direct" phone reveal, optional VCARD/LinkedIn),
+//      Overview section (optional "Read more" expand, PDF download link,
+//      the 4 social share controls in a fixed order), and whichever of
+//      Experience/Publications/Credentials anchor sections the profile
+//      actually has (each confirmed to show real content; Experience
+//      links get their own hover-effect + destination check; Credentials
+//      headings get their bullet-list check).
+//   19. People - Search Johns - First Profile Full Deep Checks
+//      Same full deep-check suite, but reached via the name search box
+//      ("johns") instead of an alphabet filter.
+//
+// Viewport-conditional logic (not environment-conditional): test 5 (Multi
+// Filter Apply and Reverse Deselect) runs a much larger set of filter
+// combinations on the desktop-chromium project than on touch viewports,
+// since the filter UI itself behaves differently there - this is a
+// deliberate, existing distinction based on `test.info().project.name`,
+// not something that varies between Live/UAT or similar.
+//
+// No baseURL-environment-conditional logic exists in this file - every
+// check applies identically regardless of which environment `baseURL`
+// points at. Runtime note: this file is intentionally large in scope (13
+// letter-sampled profiles + 1 search-based profile, each with a full deep
+// check) - expect it to be one of the slower files in this project.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
 const PEOPLE_PATH = '/people';

@@ -1,5 +1,56 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - lords.org homepage ("/")
+// ============================================================================
+// Scope: the homepage only - hero carousel, Quick Links section, eyebrow
+// utility nav, and the general body content down to the footer.
+//
+// Tests in this file:
+//   1. Homepage - Homepage Loads
+//      Loads "/", accepts the cookie banner, and checks the page title
+//      matches /Home of Cricket/i.
+//   2. Homepage - Scrolling Through the Page
+//      Scrolls to the footer, back to the top, and to the middle, checking
+//      scroll position changes as expected at each step.
+//   3. Homepage - Navigate to Various Pages from the Header Links
+//      Clicks each eyebrow-nav link (Lord's Insider, London Spirit, Shop,
+//      Tickets) and confirms each opens a new tab on its expected external
+//      subdomain, then confirms the original tab stays on the homepage.
+//   4. Homepage - Navigate to Various Pages from the Body Links
+//      Clicks 3 fixed Quick Links (Fixtures, Getting Here, Tours & Museum)
+//      plus a further 6 randomly-sampled internal body links discovered by
+//      scrolling the page and collecting whatever well-formed same-origin
+//      hrefs are actually rendered - deliberately not hardcoded, since
+//      homepage promo/body content changes between releases. Each link is
+//      clicked, verified to navigate, then the test goes back and confirms
+//      the homepage is restored before moving to the next.
+//
+// No environment-conditional logic or currently-confirmed Live-vs-UAT2
+// content differences exist in this file as of 2026-07-16 - the reorg that
+// synced most of Live's content to UAT2 didn't surface anything here worth
+// branching on. The random-link sampling approach means this file adapts to
+// content changes on either environment automatically rather than needing
+// per-environment maintenance.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 function buildExpectedUrl(baseURL, path) {

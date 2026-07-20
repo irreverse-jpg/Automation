@@ -1,5 +1,63 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Life at a Care UK Home (/life-at-a-care-uk-home) and
+// every page it links to
+// ============================================================================
+// Scope: the "Life at a Care UK home" hub page (reached via the real menu)
+// and all 7 real sub-pages under it (Environment and Facilities, Our Teams,
+// Food and Dining, Lifestyle, Keeping in Touch/Visiting, Part of the
+// Community, Wishing Trees), plus nested destinations under Lifestyle (4)
+// and Food and Dining (5, including Chef of the Year 2025).
+//
+// Tests in this file (18 total):
+//   1. Life at a Care UK home - Initial Page Checks
+//      Navigates via the menu, checks title/breadcrumb/H1, follows the
+//      hero "FIND A CARE HOME" CTA to /care-homes and back, checks the
+//      "Wishing trees" section's "Read more" CTA, any video module on the
+//      page, the "What's going on?" article row's "Read more" CTA to
+//      /news, then the TOP button + footer.
+//   2-8. Seven generated "Traversal" tests (one per lifeTraversalScenarios
+//      entry: Environment and Facilities, Our Teams, Food and Dining,
+//      Lifestyle, Keeping in Touch, Part of the Community, Wishing Trees) -
+//      each runs the shared conditional traversal checks (video/FAQ-
+//      accordion/carousel/TOP if present).
+//   9-12. Four generated "Lifestyle - <Sub-topic> Traversal" tests (Meaningful
+//      Lifestyles, Activities and Outings, Keeping Active, Use of Technology)
+//      - each opens Lifestyle, follows that sub-topic's own "Read more" CTA,
+//      confirms the destination URL, then the shared conditional checks.
+//   13-17. Five generated "Food and dining - <Sub-topic> Traversal" tests
+//      (Personalisation and Choice, Nutrition and Hydration, Our Catering
+//      Teams, Our Dining Experience, Sample Menu) - same shape as the
+//      Lifestyle sub-topics, but against fixed expected routes.
+//   18. Life at a Care UK home - Food and dining - Chef of the Year 2025
+//      Traversal
+//      Opens the Food and Dining sub-page, follows its "Chef of the Year"
+//      CTA, confirms the destination URL/H1, then generically checks for
+//      any video/accordion/carousel modules and the TOP control (each
+//      only if actually present on the page - not assumed).
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 function normalizeWhitespace(value) {

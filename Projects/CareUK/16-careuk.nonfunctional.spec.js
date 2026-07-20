@@ -1,7 +1,85 @@
 const http = require('http');
 const https = require('https');
 const { test, expect } = require('@playwright/test');
+
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
 const AxeBuilder = require('@axe-core/playwright').default;
+
+// ============================================================================
+// Coverage notes - Non-Functional (SEO / security / accessibility)
+// ============================================================================
+// Scope: Site-wide technical health checks that aren't tied to any single
+// feature - sitemap/robots.txt discoverability, canonical/meta/social tags,
+// analytics presence, security headers, structured data, and a WCAG2A/AA
+// accessibility sweep (via @axe-core/playwright) across the homepage and the
+// KEY_PAGES list (/, /help-advice, /where-do-i-start, /care-homes, /careers).
+//
+// Tests in this file (19 total):
+//   1. Sitemap is available and contains URLs - probes localized and root
+//      sitemap.xml/sitemap_index.xml candidates, skips if none are readable.
+//   2. Sitemap sample URLs resolve (no 4xx/5xx) - samples up to 5 same-origin
+//      URLs from the sitemap and confirms each resolves successfully.
+//   3. robots.txt is available and advertises sitemap - checks for
+//      User-agent and Disallow directives.
+//   4. Canonical and robots directives on key pages - for each KEY_PAGES
+//      entry, verifies an absolute canonical link with a matching path and a
+//      reachable, title-matching destination, plus a recognized robots meta
+//      directive if present.
+//   5. Core meta tags are present - charset, viewport, and a meaningful
+//      description tag on the homepage.
+//   6. Open Graph and social metadata exists - og:title/description/type/url
+//      on the homepage.
+//   7. Google Analytics / Tag Manager signal exists - scans page scripts for
+//      GTM/GA markers.
+//   8. CSP and basic security headers are in place - CSP (or report-only),
+//      X-Content-Type-Options, Referrer-Policy on the homepage response.
+//   9. Document language is English - homepage <html lang> starts with "en".
+//   10. No mixed-content HTTP assets/links on homepage - scans for insecure
+//       http:// URLs among hrefs/srcs.
+//   11. Structured data (JSON-LD) exists and is valid JSON - checks for
+//       parseable JSON-LD, falls back to schema.org microdata, and skips
+//       gracefully (does not fail) if neither is present on the homepage.
+//   12. Basic document/head essentials are present - lang attribute,
+//       meaningful title length, favicon link, and at least one hardening
+//       header (permissions-policy/x-frame-options/COOP/CORP).
+//   13. Accessibility - Homepage has no critical axe violations.
+//   14. Accessibility - Key user pages have no critical axe violations -
+//       runs axe across all of KEY_PAGES (excludes .fancybox/.modal on
+//       /where-do-i-start, where a known overlay would otherwise skew
+//       results).
+//   15. Accessibility - Landmark structure exists on key pages - main,
+//       banner, and contentinfo landmarks across KEY_PAGES.
+//   16. Accessibility - Exactly one H1 exists on core pages (checks for at
+//       least one, across KEY_PAGES).
+//   17. Accessibility - Interactive controls expose accessible names - scans
+//       visible buttons/links/inputs for a usable accessible name on the
+//       homepage.
+//   18. Accessibility - Images have alt text or are explicitly decorative -
+//       flags visible <img> elements missing an alt attribute entirely.
+//   19. Accessibility - Skip link is available and keyboard focus moves on
+//       Tab - confirms a "skip to content" link exists and Tab moves focus
+//       to a focusable control.
+//
+// The structured-data test (11) is intentionally content-based rather than
+// environment-based: it skips only if the homepage genuinely exposes neither
+// JSON-LD nor microdata, so it will start failing on its own if the site
+// later adds one without the markup being valid.
+// ============================================================================
 
 // Key pages for CareUK; adjust if your site uses different paths
 const KEY_PAGES = ['/', '/help-advice', '/where-do-i-start', '/care-homes', '/careers'];

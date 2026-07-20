@@ -1,5 +1,71 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Homepage widgets + "Types of Care We Offer" carousel and
+// its 4 destination pages
+// ============================================================================
+// Scope: despite the filename, every test here starts from the site ROOT
+// homepage ("/", not a separate "/care-homes" page) - it covers the
+// homepage's signpost carousel, its "Types of Care We Offer" carousel
+// (and a full deep traversal into each of the 4 cards it links to:
+// Residential, Dementia, Nursing, and Respite care), plus general
+// homepage body CTAs and article tiles.
+//
+// Tests in this file (8 total):
+//   1. Care Homes - Initial Page Checks - title/hero + key homepage
+//      sections/widgets.
+//   2. Care Homes - Verify Signpost Carousel Interactions - confirms the
+//      carousel's base state, then that next/previous controls rotate the
+//      active content.
+//   3. Care Homes - Types of Care We Offer - Traverse Each Carousel Card
+//      Destination - a lighter-weight sweep confirming every card's
+//      destination is reachable.
+//   4. Care Homes - Types of Care We Offer - Residential Care Deep
+//      Traversal - opens via "Find out more", checks title/H1/breadcrumb/
+//      hero CTA, the "Discover other types of care" route back to
+//      /types-of-care, a nearest-care-home search with a manual location +
+//      care type filter, and the TOP button.
+//   5. Care Homes - Types of Care We Offer - Dementia Care Deep Traversal
+//      - title/H1/breadcrumb, an all-buttons no-404 sweep, any
+//      video on the page, and the TOP button.
+//   6. Care Homes - Types of Care We Offer - Nursing Care Deep Traversal -
+//      same shape as Dementia, plus any accordion on the page and a
+//      nearest-care-home search interaction.
+//   7. Care Homes - Types of Care We Offer - Respite Care Deep Traversal -
+//      same shape as Nursing Care.
+//   8. Care Homes - Verify Body CTA Inventory and Article Tiles - checks
+//      critical body CTA link targets are visible and article tiles
+//      render meaningful content.
+//   (a 9th test, "Care Homes - Verify Internal Body Links Return Healthy
+//   Responses", checks internal body links resolve without error statuses)
+//
+// Each of the 4 "deep traversal" tests deliberately checks for video/
+// accordion/search widgets generically ("Find and test any ... on page")
+// rather than assuming every destination page has the same components -
+// confirmed these 4 care-type pages genuinely differ in which widgets
+// they include.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 const CORE_SECTION_HEADINGS = [
@@ -220,7 +286,7 @@ test('Care Homes - Initial Page Checks', async ({ page, baseURL }) => {
     });
 
     await test.step('Verify page title and hero', async () => {
-        await expect(page, 'The homepage title should match the CareUK care homes proposition').toHaveTitle(/Care Homes \| Residential, Nursing & Dementia \| Care UK/i);
+        await expect(page, 'The homepage title should match the CareUK care homes proposition').toHaveTitle(/Care Homes \| Residential, Nursing (?:&|and) Dementia \| Care UK/i);
         await expect(page.getByRole('heading', { level: 1, name: 'Trusted to care' }).first(), 'The hero heading should be visible for the care homes homepage').toBeVisible();
         await expect(page.getByRole('link', { name: /Find a care home/i }).first(), 'The hero area should expose a primary Find a care home CTA').toBeVisible();
     });

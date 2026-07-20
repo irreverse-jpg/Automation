@@ -1,5 +1,64 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Who We Are (/company/who-we-are)
+// ============================================================================
+// Scope: The Who We Are hub page and every page it links to - Our Management
+// Team (including all 8 individual member profiles), We All Shape Our Values,
+// Our History, Our Approach to ESG, Care UK Stars Awards, and Care UK
+// Campaigns (including all 20 individual campaign pages).
+//
+// Tests in this file (36 total):
+//   1. Who We Are - Initial Page Checks - full hub page audit via test.step:
+//      verifies each content card (Our Management Team, We All Shape Our
+//      Values, Our History, Our Approach to ESG) exposes the correct H4
+//      heading and a READ MORE CTA pointing at the expected route, checks the
+//      dynamic-year Care UK Stars Awards card and its CTA, checks the
+//      Campaigns at Care UK H3 card and its CTA, then verifies the TOP
+//      control/footer.
+//   2-8. Seven generated "Traversal" tests (one per standardTraversalScenarios
+//      entry: Our Management Team, We All Shape Our Values, Our History, Our
+//      Approach to ESG, Care UK Stars Awards, Care UK Campaigns, Complaints)
+//      - each does a conditional traversal check (via
+//      runConditionalTraversalChecks) of the hub-level landing page for that
+//      route. Complaints was added to close a real meganav coverage gap
+//      (previously untested).
+//   9-16. Eight generated "Our Management Team - <Name> Traversal" tests (one
+//      per managementTeamMembers entry: Andrew Knight, Matt Rosenberg, Martin
+//      Friend, Rachel Harvey, Jacqui White, Leah Queripel, Richard Pearman,
+//      Tony Weedon) - each opens the individual profile page, verifies the
+//      page title and H1 contain the member's name, verifies the breadcrumb's
+//      current item names the member, then runs video/accordion/carousel
+//      module checks if present and verifies the TOP control/footer.
+//   17-36. Twenty generated "Care UK Campaigns - <Name> Traversal" tests (one
+//      per campaignTraversalScenarios entry, e.g. Step into Christmas, Fixer
+//      Uppers, The Centenarian Club, VE Day 80th Anniversary, and 16 others)
+//      - each does a conditional traversal check of that individual campaign
+//      page.
+//
+// The management-team and campaign lists are fixed arrays hardcoded in this
+// file (not discovered dynamically from the live page), so if Care UK adds,
+// removes, or renames a team member or campaign, this file's arrays need a
+// manual update to stay in sync.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 function normalizeWhitespace(value) {
@@ -510,6 +569,7 @@ const standardTraversalScenarios = [
     { name: 'Who We Are - Our Approach to ESG Traversal', route: '/company/esg' },
     { name: 'Who We Are - Care UK Stars Awards Traversal', route: '/company/care-uk-stars' },
     { name: 'Who We Are - Care UK Campaigns Traversal', route: '/company/care-uk-campaigns' },
+    { name: 'Who We Are - Complaints Traversal', route: '/company/complaints' },
 ];
 
 for (const scenario of standardTraversalScenarios) {

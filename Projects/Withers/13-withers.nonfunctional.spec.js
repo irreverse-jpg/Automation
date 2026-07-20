@@ -1,7 +1,67 @@
 const http = require('http');
 const https = require('https');
 const { test, expect } = require('@playwright/test');
+
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
 const AxeBuilder = require('@axe-core/playwright').default;
+
+// ============================================================================
+// Coverage notes - Non-Functional (SEO + security + accessibility) suite
+// ============================================================================
+// What this file covers: sitewide SEO, security-header, and accessibility
+// (axe-core) checks that aren't tied to any single page's functional
+// content. A small sample set of key pages is used across most of the
+// per-page checks below.
+//
+// Test list (21 tests):
+// SEO / crawlability:
+//   1. Sitemap is Available and Contains URLs
+//   2. Sitemap Sample URLs Resolve (No 4xx/5xx)
+//   3. robots.txt is Available and Exposes Crawl Directives
+//   4. Canonical and robots Directives on Key Pages
+//   5. Canonical URL is Present and Absolute
+//   6. Core Meta Tags Are Present (charset, viewport, description)
+//   7. Open Graph and Social Metadata Exists
+//   8. Google Analytics / Tag Manager Signal Exists
+//   9. Language Signals Are Discoverable
+// Security:
+//   10. CSP and Basic Security Headers Are in Place
+//   11. No Mixed-Content HTTP Assets/Links on Homepage
+//   12. Structured Data (JSON-LD) Exists and Is Valid JSON - asserted as a
+//       hard requirement here (unlike some sibling projects' equivalent
+//       test, which skips gracefully if JSON-LD is absent) - confirmed
+//       this site reliably serves JSON-LD, so no fallback is needed.
+//   13. Basic Document/Head Essentials Are Present (lang, title, favicon,
+//       hardening headers)
+// Accessibility:
+//   14. Homepage Has No Critical Axe Violations
+//   15. Key User Pages Have No Critical Axe Violations
+//   16. Landmark Structure Exists on Key Pages (main/banner/contentinfo)
+//   17. Exactly One H1 Exists on Core Pages
+//   18. Interactive Controls Expose Accessible Names
+//   19. Images Have Alt Text or Are Explicitly Decorative
+//   20. Form Fields Have Associated Labels on Contact Page
+//   21. Skip Link Is Available and Keyboard Focus Moves on Tab
+//
+// No environment-conditional logic exists in this file - every check
+// reads its target from the configured Playwright `baseURL` and applies
+// identically regardless of environment.
+// ============================================================================
 
 const KEY_PAGES = ['/', '/search', '/contact-us', '/insight', '/people', '/locations'];
 

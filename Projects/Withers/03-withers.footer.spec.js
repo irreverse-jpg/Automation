@@ -1,5 +1,51 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - withersworldwide.com site-wide footer
+// ============================================================================
+// Scope: the footer (`contentinfo` landmark), reached from the homepage -
+// every visible navigable/external link (discovered dynamically), the
+// social icon row (Twitter/X, LinkedIn, Instagram), and 5 fixed legal links
+// (Legal and regulatory, Pricing, Cookies and privacy, Accessibility,
+// Attorney advertising).
+//
+// Tests in this file:
+//   1. Footer - Verify Footer is Present
+//      Confirms the footer and its "View all offices" link are visible.
+//   2. Footer - Verify Links
+//      Discovers every visible footer link, splits them into internal
+//      "navigable" links (clicked for real, confirming the destination
+//      URL) and external non-social links (checked only for a
+//      well-formed absolute URL, not clicked).
+//   3. Footer - Verify Social Links
+//      Discovers every footer link pointing at a known social domain and
+//      confirms it opens in a new tab and points at a supported domain
+//      (x.com is normalized to twitter.com for comparison).
+//   4. Footer - Verify Legal Links
+//      Clicks each of the 5 fixed legal links for real, confirming each
+//      navigates to its expected destination.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
 const SOCIAL_DOMAINS = ['twitter.com', 'linkedin.com', 'instagram.com'];

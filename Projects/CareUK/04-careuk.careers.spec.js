@@ -1,5 +1,72 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Careers (/careers) hub + Roles vacancy search + 4 role
+// category pages
+// ============================================================================
+// Scope: the Careers hub page, the Roles/vacancies search page (including
+// a full search-and-filter journey), and 4 role-category pages (Care
+// Roles, Clinical Roles, Home Support Roles, Support Centre Roles).
+//
+// Tests in this file (10 total):
+//   1. Careers - Initial Page Checks - title/H1/hero CTA + main section
+//      headings.
+//   2. Careers - Verify Key Body Links Resolve and Representative CTAs
+//      Navigate - checks stable body destinations for 404s, then clicks a
+//      representative sample of visible CTAs through the real UI.
+//   3. Careers - Verify Inline Video, Carousels, and Top Control - plays
+//      the inline video (fullscreen toggle + pause), moves the "Explore
+//      the roles" carousel, moves a lower carousel (deliberately without
+//      relying on known-bad UAT-only links/images there - see below), and
+//      confirms the footer "Top" control scrolls back up.
+//   4. Careers - Verify Representative Hover States - hover effects on a
+//      representative sample of interactive elements.
+//   5. Careers - Roles Full Page Test - opens vacancies via its real entry
+//      points, checks title/breadcrumb/home-icon/H1, "Show more homes"
+//      accordion reveal, and cross-checks a 15-pin sample against listing
+//      cards and accordion job counts.
+//   6. Careers - Roles - Search and Filter Journey - a full multi-step
+//      journey: keeps "Care home jobs" selected, searches postcode M33 via
+//      autocomplete, filters by "Clinical Roles - Clinical Lead", resets
+//      those filters, then iterates 5 options in the "Regional & support
+//      centre jobs" dropdown.
+//   7-10. Careers - [Care/Clinical/Home Support/Support Centre] Roles
+//      Traversal Test (4 tests, same shape each) - title/H1/section
+//      headings, stable-destination 404 checks, representative link
+//      navigation, and then per-category specifics: Care Roles and
+//      Clinical Roles both check FAQ accordions; Care Roles and Support
+//      Centre Roles both have a real playable inline video (play/
+//      fullscreen/pause), while Clinical Roles and Home Support Roles
+//      explicitly confirm there is NO visible playable video panel (a
+//      real content difference between categories, not a gap); Home
+//      Support Roles and Support Centre Roles both check every role card
+//      points at its expected destination. All 4 finish with footer/Top
+//      control/social links and representative hover checks.
+//
+// Confirmed environment-specific note (UAT): the Careers hub's lower
+// carousel test is deliberately written to avoid asserting on that
+// carousel's own links/images, since those are known to be broken on UAT
+// specifically - the carousel's move mechanism is still exercised, just
+// not its content.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = '#onetrust-accept-btn-handler, button:has-text("YES, ALLOW ALL"), button:has-text("Accept")';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, #onetrust-pc-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 const CAREERS_PATH_REGEX = /\/careers(?:\?.*)?(?:#.*)?$/i;

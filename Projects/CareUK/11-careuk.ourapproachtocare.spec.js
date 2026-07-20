@@ -1,4 +1,79 @@
 const { test, expect } = require('@playwright/test');
+
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Our Approach to Care (/our-approach-to-care) + 8
+// destination pages
+// ============================================================================
+// Scope: the "Our Approach to Care" hub page and 8 pages it links onward
+// to: Person-centred care, "What is the CQC", "Our Approach to Care in
+// Scotland", Awards & Recognition, "What others say" (with its own
+// feedback form), and 4 "What quality means to us" testimonial pages
+// (Andrew Knight/Rachel Gilbert/Omar Taylor/Suzanne Mumford on quality).
+//
+// Tests in this file (15 total):
+//   1. Our Approach to Care - Initial Page Checks
+//      Navigates via the menu, checks title/breadcrumb/H1, follows the
+//      hero "FIND A CARE HOME" CTA to /care-homes and back, the person-
+//      centred/person-led card's "Read more" route, the "Care you can
+//      trust" section's care-regulators link, the "Our Performance"
+//      section (Awards & Recognition + What others say), any video
+//      module, then the TOP button + footer.
+//   2-5. Four generated "Traversal" tests (one per standardTraversalScenarios
+//      entry: Clinical Expertise, Safety / Cleanliness, Safety / Cleanliness -
+//      Reducing Infections, What quality means to us [hub]) - each runs the
+//      shared conditional traversal checks (video/FAQ-accordion/carousel/TOP
+//      if present) via runConditionalTraversalChecks.
+//   6. Our Approach to Care - Person-centred care Traversal
+//      Confirmed real content quirk: the "Read more" CTA's route slug
+//      varies by environment - the test accepts any of 3 known slugs
+//      (`person-centred-care`, `person-centre-care` [sic, missing "d" -
+//      a real typo variant seen in one environment], `person-led-care`)
+//      rather than hardcoding one, then runs the shared conditional
+//      traversal checks.
+//   7. Our Approach to Care - Our Performance - What is the CQC Traversal
+//      Title/breadcrumb/H1, confirms a care-homes list exists, FAQ
+//      heading + accordion behaviour, a news block with "Show More" and
+//      opening 2 news items, footer/TOP.
+//   8. Our Approach to Care - Our Performance - Our Approach to Care in
+//      Scotland Traversal
+//      Same shape as CQC, but the FAQ check is conditional ("if present") -
+//      confirmed this page doesn't always have one.
+//   9. Our Approach to Care - Our Performance - Awards & Recognition
+//      Traversal - page semantics, the awards collection panel, and the
+//      usual generic module checks.
+//   10. Our Approach to Care - Our Performance - What others say Traversal
+//      Page semantics, confirms at least 2 videos are present, then a
+//      feedback form's full 3-journey shape (empty validation, progressive
+//      per-field clearing, REAL reCAPTCHA-gated submission), then the
+//      usual post-submit checks where applicable.
+//   11-14. Our Approach to Care - What quality means to us - [Andrew
+//      Knight/Rachel Gilbert/Omar Taylor/Suzanne Mumford] on quality
+//      Traversal (4 tests, generated from a fixed route list, same shared
+//      conditional-traversal-checks helper as test 6).
+//   15. Our Approach to Care - Veteran Friendly Framework Traversal
+//      Added to close a real meganav coverage gap (this page previously had
+//      no test at all) - runs the same shared conditional traversal checks.
+//
+// No environment-conditional logic exists beyond test 6's route-slug
+// tolerance described above.
+// ============================================================================
 const { getCurrentSubmissionNumber, incrementSubmissionNumber } = require('./submissionCounter');
 
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
@@ -695,6 +770,10 @@ const standardTraversalScenarios = [
     {
         name: 'Our Approach to Care - What quality means to us Traversal',
         route: '/our-approach-to-care/what-quality-means-to-us',
+    },
+    {
+        name: 'Our Approach to Care - Veteran Friendly Framework Traversal',
+        route: '/our-approach-to-care/veteran-friendly-framework',
     },
 ];
 

@@ -1,5 +1,68 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - Insight (/insight) hub and all 7 tabs
+// ============================================================================
+// Scope: the Insight hub page and its 7 tabs (Featured, Latest, Read,
+// Listen, Watch, Events, Search), including the search tab's dropdown/text
+// filtering, plus a sample of individual article pages reached from
+// several of those tabs.
+//
+// Tests in this file (12 total):
+//   1. Insight - Featured
+//      Verifies the hero/tab highlight, hot topic cards, #WorkingWorld
+//      section, and Resources section/footer.
+//   2. Insight - Latest / 3. Read / 4. Listen / 5. Watch (4 near-identical
+//      tests, one per tab)
+//      Verifies the hero/tab highlight, confirms that tab's items are
+//      sorted in descending date order, and checks the optional "Show
+//      more" button + footer.
+//   6. Insight - Events
+//      Same shape as above, but events are checked in ASCENDING date
+//      order (upcoming-first), not descending like the other tabs.
+//   7. Insight - Search
+//      Verifies the hero/tab highlight and the default (empty) search
+//      controls, plus the footer.
+//   8. Insight - Search - Filter Using Dropdowns
+//      Cycles through the live dropdown option sets for practice/area of
+//      focus/applicable law/client type, applying combinations and
+//      confirming results update.
+//   9. Insight - Search - Filter Using Text
+//      Cycles through 5 free-text search terms (united kingdom, practice,
+//      law, fraud, charity), confirming results for each.
+//   10. Insight - Search - Filter Using Dropdowns and Text
+//      Combines both filter types together across several cycles.
+//   11. Insight - Search - Triggering No Results
+//      Forces a unique, guaranteed-empty search term and confirms the
+//      "Can't find what you are looking for?" message appears.
+//   12. Insight - Sample Articles - Keep Their Expected Metadata and Page
+//      Elements
+//      Deliberately a SAMPLE, not exhaustive: opens the Featured hero
+//      article, samples several cards from at least one other tab, and
+//      separately traverses a UK-free-text-filtered Search result -
+//      confirming each opened article's metadata/page elements are intact.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
 const INSIGHT_TAB_ORDER = ['Featured', 'Latest', 'Read', 'Listen', 'Watch', 'Events', 'Search'];

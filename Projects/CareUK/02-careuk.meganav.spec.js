@@ -1,5 +1,55 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - careuk.co.uk main navigation (hamburger drawer menu)
+// ============================================================================
+// Scope: the site-wide navigation drawer (always hamburger-driven on this
+// site, no separate desktop bar) and the header logo. Not scoped to any
+// single page - these tests open the homepage first, then drive the menu
+// from there.
+//
+// Tests in this file:
+//   1. Meganav - Verify Meganav is Present
+//      Confirms the navigation drawer and its root level are visible once
+//      opened.
+//   2. Meganav - Verify Header Logo is Present
+//      Confirms the header logo link is visible.
+//   3. Meganav - Expand Each of the Meganav Links
+//      Reads the entire menu tree fresh at test start (never hardcodes
+//      labels, since this site's menu content changes) and expands every
+//      root item with a sub-level, then every 2nd-level item with its own
+//      3rd level, confirming each reveal. Deliberately filters out a stray
+//      "jhtest" root-level item found in the live menu (a leftover test
+//      entry, not real navigation).
+//   4. Meganav - Navigate to First, Second and Third Level Pages
+//      Walks 6 specific real paths (2 first-level: Find a local care home,
+//      Care UK News; 2 second-level: Where do I start? > Moving in, Help &
+//      advice > Our guides; 2 third-level: Life at a Care UK home >
+//      Lifestyle > Meaningful lifestyles, Types of care > Dementia care >
+//      Namaste care), confirming each lands on its expected URL with a
+//      visible H1.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';
 
 function normalizeWhitespace(value) {

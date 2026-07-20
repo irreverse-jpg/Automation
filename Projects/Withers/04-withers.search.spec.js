@@ -1,5 +1,47 @@
 const { test, expect } = require('@playwright/test');
 
+// Captures the page's web address at the moment a test fails, so the
+// findings report can tell teammates exactly where an issue was seen.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status !== testInfo.expectedStatus) {
+        await testInfo.attach('failure-context', {
+            body: JSON.stringify({
+                url: page.url(),
+                pageTitle: await page.title().catch(() => ''),
+                environment: testInfo.project.use.baseURL || '',
+                viewport: testInfo.project.name,
+            }),
+            contentType: 'application/json',
+        }).catch(() => {});
+    }
+});
+
+
+// ============================================================================
+// Coverage notes - withersworldwide.com site search (/search)
+// ============================================================================
+// Scope: the dedicated search page and its 4 results tabs (All, Experience,
+// People, Insight/Other).
+//
+// Tests in this file:
+//   1. Search - Empty Query
+//      Submits an empty search and confirms it lands on the "type=all"
+//      results URL with zero result items.
+//   2. Search - With and Without Results
+//      Searches a nonsense term ("0 results match your search") then
+//      "practices" (non-zero results summary), confirming the URL/heading
+//      each time.
+//   3. Search - Navigate Through Results
+//      Searches "practices", then opens each of the Experience/People/
+//      Insight/Other tabs in turn, confirming the URL/heading/results
+//      count for each, then drills into that tab's first result card
+//      (confirming a real H1 or non-empty title on the destination) and
+//      back to the same tab.
+//
+// No environment-conditional logic exists in this file - every check
+// applies identically regardless of which environment `baseURL` points at.
+// ============================================================================
+
 const COOKIE_ACCEPT_SELECTOR = 'button[aria-label="Accept cookies"], button:has-text("Accept"), #onetrust-accept-btn-handler';
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk .onetrust-pc-dark-filter, #onetrust-pc-sdk';
 
