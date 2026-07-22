@@ -17,7 +17,7 @@ QA automation for Principality Building Society (principality.co.uk), built to m
 - `11-pbs.helpandsupport.spec.js` — Help and support (10 FAQ-heavy pages)
 - `12-pbs.aboutus.spec.js` — About us, careers, and our impact (10 pages)
 - `13-pbs.nonfunctional.spec.js` — SEO / security / accessibility
-- `10-pbs.load.k6.js` — k6 load test scaffold
+- `14-pbs.load.k6.js` — k6 load test scaffold
 
 Every spec file's own header comment (a "Coverage notes" box right below the imports) lists its exact test list and any confirmed defects/environment differences — read that first before changing a file.
 
@@ -28,8 +28,8 @@ Every spec file's own header comment (a "Coverage notes" box right below the imp
 - Run all Playwright tests: `npm test`
 - Run headed: `npm run test:headed`
 - Run UI mode: `npm run test:ui`
-- Run non-functional file only: `npx playwright test 13-pbs.nonfunctional.spec.js`
-- Run k6 smoke profile: `k6 run --env SCENARIO=smoke 10-pbs.load.k6.js`
+- Run non-functional file only: `npm run test:nonfunctional`
+- Run k6 smoke profile: `npm run load:smoke -- --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk`
 
 ## Environment
 

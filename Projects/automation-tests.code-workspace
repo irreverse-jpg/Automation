@@ -17,6 +17,10 @@
             "path": "MCC"
         },
         {
+            "name": "RSC",
+            "path": "RSC"
+        },
+        {
             "name": "Shared",
             "path": "../Shared"
         }

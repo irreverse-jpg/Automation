@@ -26,7 +26,7 @@ const AxeBuilder = require('@axe-core/playwright').default;
 // content. A small sample set (homepage, savings, mortgages, branch finder)
 // is used across most of the per-page checks below.
 //
-// Test list (21 tests):
+// Test list (20 tests):
 // SEO / crawlability:
 //   1. Sitemap is available and contains URLs
 //   2. Sitemap sample URLs resolve (no 4xx/5xx)
@@ -53,8 +53,9 @@ const AxeBuilder = require('@axe-core/playwright').default;
 //   18. Interactive controls expose accessible names
 //   19. Images have alt text or are explicitly decorative
 //   20. Form fields have associated labels on branch finder
-//   21. Skip link is available and keyboard focus moves on Tab
 //
+// The skip-link check moved to 01-pbs.homepage.spec.js's "Homepage - Skip Links" test (2026-07-20),
+// which discovers and click-verifies skip links live rather than just checking one is attached.
 // Environment-conditional logic: only test 12 (Structured data) branches
 // on environment - it skips outright rather than failing if JSON-LD/
 // microdata isn't present, since that's the one check known to vary by
@@ -545,19 +546,5 @@ test('Accessibility - Form fields have associated labels on branch finder', asyn
         });
 
         expect(unlabeledFields, `Unlabeled form fields: ${JSON.stringify(unlabeledFields, null, 2)}`).toEqual([]);
-    });
-});
-
-test('Accessibility - Skip link is available and keyboard focus moves on Tab', async ({ page }) => {
-    await test.step('Open the homepage and verify skip-link keyboard focus', async () => {
-        await page.goto('/', { waitUntil: 'domcontentloaded' });
-
-        const skipLink = page.getByRole('link', { name: /skip to content/i });
-        await expect(skipLink, 'Homepage should expose a skip to content link').toBeAttached();
-
-        await page.keyboard.press('Tab');
-
-        const activeTag = await page.evaluate(() => (document.activeElement?.tagName || '').toLowerCase());
-        expect(activeTag, 'Pressing Tab from the homepage should focus a link first, typically the skip link').toBe('a');
     });
 });

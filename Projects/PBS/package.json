@@ -1,15 +1,22 @@
 {
-  "name": "playwright-tests",
+  "name": "pbs-playwright-tests",
   "version": "1.0.0",
-  "description": "Playwright test automation project",
+  "private": true,
+  "description": "PBS / Principality Building Society QA automation project (Playwright + k6)",
   "scripts": {
     "test": "npx playwright test -c .",
     "test:headed": "npx playwright test -c . --headed",
-    "test:ui": "npx playwright test -c . --ui"
+    "test:ui": "npx playwright test -c . --ui",
+    "test:nonfunctional": "npx playwright test -c . 13-pbs.nonfunctional.spec.js",
+    "load:smoke": "k6 run --env SCENARIO=smoke 14-pbs.load.k6.js",
+    "load:load": "k6 run --env SCENARIO=load 14-pbs.load.k6.js",
+    "load:spike": "k6 run --env SCENARIO=spike 14-pbs.load.k6.js",
+    "load:soak": "k6 run --env SCENARIO=soak 14-pbs.load.k6.js",
+    "load:all": "k6 run 14-pbs.load.k6.js"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.2",
-    "@playwright/test": "^1.42.0",
+    "@playwright/test": "^1.52.0",
     "exceljs": "^4.4.0"
   }
 }

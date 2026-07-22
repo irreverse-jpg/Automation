@@ -2,11 +2,12 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
-const BASE_URL = (__ENV.BASE_URL || '').replace(/\/+$/, '');
+const BASE_URL = (__ENV.BASE_URL || __ENV.RSC_BASE_URL || __ENV.K6_BASE_URL || '').replace(/\/+$/, '');
 const SELECTED_SCENARIO = (__ENV.SCENARIO || 'all').trim().toLowerCase();
+const ORIGIN = (BASE_URL.match(/^https?:\/\/[^/]+/i) || [''])[0];
 
 if (!BASE_URL) {
-    throw new Error('BASE_URL is required. Example: BASE_URL=https://pbs-qa2.hosted.positive.co.uk');
+    throw new Error('BASE_URL is required. Example: BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com');
 }
 
 const errorRate = new Rate('errors');
@@ -19,7 +20,7 @@ QUICK GUIDE (k6 load tests)
 
 What this file does
 -------------------
-- Runs simple GET-only journeys against core website pages.
+- Runs simple GET-only journeys against core RSC (Royal Society of Chemistry) pages.
 - Measures reliability (failures) and speed (response times).
 - Prints a summary at the end with a clear final verdict.
 
@@ -34,31 +35,45 @@ Scenarios available
 How to run (PowerShell)
 -----------------------
 The script path is relative to your current working directory.
-Replace BASE_URL if needed, example for QA2.
+Replace BASE_URL if needed, example for Live.
 
 From the Projects folder (cd .../Projects):
 - Smoke:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=smoke PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke RSC/10-rsc.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=load PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load RSC/10-rsc.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=spike PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike RSC/10-rsc.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=soak PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak RSC/10-rsc.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com RSC/10-rsc.load.k6.js
 
-From the PBS folder (cd .../Projects/PBS):
+From the RSC folder (cd .../Projects/RSC):
 - Smoke:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=smoke 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke 10-rsc.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=load 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load 10-rsc.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=spike 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike 10-rsc.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=soak 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak 10-rsc.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com 10-rsc.load.k6.js
+
+What pages this script exercises
+--------------------------------
+- Core pages under BASE_URL:
+    - / (homepage)
+    - /membership
+    - /publishing
+    - /policy-and-campaigning
+    - /standards-and-recognition
+    - /funding-and-support
+    - /news
+- Root-level technical endpoints from the site origin:
+    - /robots.txt
+    - /sitemap.xml
 
 How to read results fast
 ------------------------
@@ -264,8 +279,13 @@ export function handleSummary(data) {
     };
 }
 
-function requestAndCheck(path, tags = {}) {
-    const res = http.get(`${BASE_URL}${path}`, {
+function getRequestUrl(path, { rootLevel = false } = {}) {
+    return rootLevel ? `${ORIGIN}${path}` : `${BASE_URL}${path}`;
+}
+
+function requestAndCheck(path, tags = {}, optionsForRequest = {}) {
+    const requestUrl = getRequestUrl(path, optionsForRequest);
+    const res = http.get(requestUrl, {
         tags: { endpoint: path, ...tags },
         redirects: 5,
         timeout: '30s',
@@ -288,24 +308,34 @@ export function browseCorePages() {
     requestAndCheck('/');
     sleep(Math.random() * 1 + 0.2);
 
-    requestAndCheck('/home/savings/savings-accounts');
+    requestAndCheck('/membership');
     sleep(Math.random() * 1 + 0.2);
 
-    requestAndCheck('/home/mortgages');
+    requestAndCheck('/publishing');
     sleep(Math.random() * 1 + 0.2);
 
-    requestAndCheck('/branch-finder');
+    requestAndCheck('/policy-and-campaigning');
     sleep(Math.random() * 1 + 0.2);
 
-    requestAndCheck('/robots.txt', { type: 'seo' });
-    requestAndCheck('/sitemap.xml', { type: 'seo' });
+    requestAndCheck('/standards-and-recognition');
+    sleep(Math.random() * 1 + 0.2);
+
+    requestAndCheck('/funding-and-support');
+    sleep(Math.random() * 1 + 0.2);
+
+    requestAndCheck('/news');
+    sleep(Math.random() * 1 + 0.2);
+
+    requestAndCheck('/robots.txt', { type: 'seo' }, { rootLevel: true });
+    requestAndCheck('/sitemap.xml', { type: 'seo' }, { rootLevel: true });
 
     // Randomized navigation mix
     const extra = [
-        '/home/savings/savings-accounts',
-        '/home/mortgages',
-        '/branch-finder',
         '/',
+        '/membership',
+        '/publishing',
+        '/policy-and-campaigning',
+        '/news',
     ];
     const randomPath = extra[Math.floor(Math.random() * extra.length)];
     requestAndCheck(randomPath, { type: 'random' });

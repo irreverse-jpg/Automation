@@ -6,7 +6,7 @@
 // Tours, About Us, Careers Vacancies) is the shared sample set used across most of the per-page
 // checks below.
 //
-// Test list (19 tests):
+// Test list (18 tests):
 // SEO / crawlability:
 //   1. Sitemap is available and contains URLs
 //   2. Sitemap sample URLs resolve (no 4xx/5xx)
@@ -29,8 +29,10 @@
 //   16. At least one H1 exists on core pages
 //   17. Interactive controls expose accessible names
 //   18. Images have alt text or are explicitly decorative
-//   19. Skip link is available and keyboard focus moves on Tab
 //
+// The skip-link check moved to 01-mcc.homepage.spec.js's "Homepage - Skip Links" test (2026-07-20),
+// which discovers and click-verifies skip links live rather than just checking one is attached. Note:
+// as of 2026-07-20 MCC's homepage has no skip link at all, so that new test is expected to fail here.
 // Environment-conditional logic: NONE. Unlike the other specs in this project, this file contains no
 // isUatEnvironment()/baseURL branching and no UAT2-specific documented findings - every check reads
 // its target from the configured Playwright baseURL and applies identically regardless of
@@ -479,18 +481,5 @@ test('Accessibility - Images have alt text or are explicitly decorative', async 
         });
 
         expect(invalidImages, `Images missing alt/decorative semantics: ${JSON.stringify(invalidImages, null, 2)}`).toEqual([]);
-    });
-});
-
-test('Accessibility - Skip link is available and keyboard focus moves on Tab', async ({ page }) => {
-    await test.step('Open the homepage and verify skip-link keyboard focus', async () => {
-        await page.goto('/', { waitUntil: 'domcontentloaded' });
-
-        const skipLink = page.getByRole('link', { name: /skip to (?:main )?content/i });
-        await expect(skipLink, 'Homepage should expose a skip to content link').toBeAttached();
-
-        await page.keyboard.press('Tab');
-        const activeTag = await page.evaluate(() => (document.activeElement?.tagName || '').toLowerCase());
-        expect(['a', 'button', 'input', 'select', 'textarea'], 'Pressing Tab should move focus to a keyboard-focusable control').toContain(activeTag);
     });
 });

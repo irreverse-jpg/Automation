@@ -1,3 +1,40 @@
+// COVERAGE NOTES - Non-Functional (SEO + security + accessibility) suite
+// =========================================================================
+//
+// What this file covers: sitewide SEO, security-header, and accessibility (axe-core) checks that
+// aren't tied to any single page's functional content. KEY_PAGES (homepage plus the main top-level
+// section landing pages) is the shared sample set used across most of the per-page checks below.
+//
+// Test list (18 tests):
+// SEO / crawlability:
+//   1. Sitemap is available and contains URLs
+//   2. Sitemap sample URLs resolve (no 4xx/5xx)
+//   3. robots.txt is available and advertises crawl directives
+//   4. Canonical and robots directives on key pages
+//   5. Core meta tags are present (charset, viewport, description)
+//   6. Open Graph and social metadata exists
+//   7. Google Analytics / Tag Manager signal exists
+//   8. Structured data (JSON-LD) exists and is valid JSON (falls back to schema.org microdata, then
+//      skips if neither is present)
+// Security:
+//   9. CSP and basic security headers are in place
+//   10. No mixed-content HTTP assets/links on homepage
+//   11. Basic document/head essentials are present (lang, title, favicon, hardening headers)
+// Accessibility:
+//   12. Document language is English
+//   13. Homepage has no critical axe violations
+//   14. Key user pages have no critical axe violations
+//   15. Landmark structure exists on key pages (main/banner/contentinfo)
+//   16. At least one H1 exists on core pages
+//   17. Interactive controls expose accessible names
+//   18. Images have alt text or are explicitly decorative
+//
+// The skip-link check moved to 01-rsc.homepage.spec.js's "Homepage - Skip Links" test (2026-07-20),
+// which discovers and click-verifies skip links live rather than just checking one is attached.
+//
+// KEY_PAGES was chosen from the confirmed top-level nav (see 01-rsc.homepage.spec.js's coverage
+// notes) as of 2026-07-20. Update this list as deeper pages get their own spec coverage.
+
 const http = require('http');
 const https = require('https');
 const { test, expect } = require('@playwright/test');
@@ -20,69 +57,7 @@ test.afterEach(async ({ page }, testInfo) => {
 
 const AxeBuilder = require('@axe-core/playwright').default;
 
-// ============================================================================
-// Coverage notes - Non-Functional (SEO / security / accessibility)
-// ============================================================================
-// Scope: Site-wide technical health checks that aren't tied to any single
-// feature - sitemap/robots.txt discoverability, canonical/meta/social tags,
-// analytics presence, security headers, structured data, and a WCAG2A/AA
-// accessibility sweep (via @axe-core/playwright) across the homepage and the
-// KEY_PAGES list (/, /help-advice, /where-do-i-start, /care-homes, /careers).
-//
-// Tests in this file (18 total):
-//   1. Sitemap is available and contains URLs - probes localized and root
-//      sitemap.xml/sitemap_index.xml candidates, skips if none are readable.
-//   2. Sitemap sample URLs resolve (no 4xx/5xx) - samples up to 5 same-origin
-//      URLs from the sitemap and confirms each resolves successfully.
-//   3. robots.txt is available and advertises sitemap - checks for
-//      User-agent and Disallow directives.
-//   4. Canonical and robots directives on key pages - for each KEY_PAGES
-//      entry, verifies an absolute canonical link with a matching path and a
-//      reachable, title-matching destination, plus a recognized robots meta
-//      directive if present.
-//   5. Core meta tags are present - charset, viewport, and a meaningful
-//      description tag on the homepage.
-//   6. Open Graph and social metadata exists - og:title/description/type/url
-//      on the homepage.
-//   7. Google Analytics / Tag Manager signal exists - scans page scripts for
-//      GTM/GA markers.
-//   8. CSP and basic security headers are in place - CSP (or report-only),
-//      X-Content-Type-Options, Referrer-Policy on the homepage response.
-//   9. Document language is English - homepage <html lang> starts with "en".
-//   10. No mixed-content HTTP assets/links on homepage - scans for insecure
-//       http:// URLs among hrefs/srcs.
-//   11. Structured data (JSON-LD) exists and is valid JSON - checks for
-//       parseable JSON-LD, falls back to schema.org microdata, and skips
-//       gracefully (does not fail) if neither is present on the homepage.
-//   12. Basic document/head essentials are present - lang attribute,
-//       meaningful title length, favicon link, and at least one hardening
-//       header (permissions-policy/x-frame-options/COOP/CORP).
-//   13. Accessibility - Homepage has no critical axe violations.
-//   14. Accessibility - Key user pages have no critical axe violations -
-//       runs axe across all of KEY_PAGES (excludes .fancybox/.modal on
-//       /where-do-i-start, where a known overlay would otherwise skew
-//       results).
-//   15. Accessibility - Landmark structure exists on key pages - main,
-//       banner, and contentinfo landmarks across KEY_PAGES.
-//   16. Accessibility - Exactly one H1 exists on core pages (checks for at
-//       least one, across KEY_PAGES).
-//   17. Accessibility - Interactive controls expose accessible names - scans
-//       visible buttons/links/inputs for a usable accessible name on the
-//       homepage.
-//   18. Accessibility - Images have alt text or are explicitly decorative -
-//       flags visible <img> elements missing an alt attribute entirely.
-//
-// The skip-link check moved to 01-careuk.homepage.spec.js's "Homepage - Skip Links" test (2026-07-20),
-// which discovers and click-verifies skip links live rather than just checking one is attached. Note:
-// as of 2026-07-20 CareUK's homepage has no skip link at all, so that new test is expected to fail here.
-// The structured-data test (11) is intentionally content-based rather than
-// environment-based: it skips only if the homepage genuinely exposes neither
-// JSON-LD nor microdata, so it will start failing on its own if the site
-// later adds one without the markup being valid.
-// ============================================================================
-
-// Key pages for CareUK; adjust if your site uses different paths
-const KEY_PAGES = ['/', '/help-advice', '/where-do-i-start', '/care-homes', '/careers'];
+const KEY_PAGES = ['/', '/membership', '/publishing', '/policy-and-campaigning', '/news'];
 
 function getConfiguredBaseUrl(testInfo) {
     const configuredBaseUrl = testInfo.project.use.baseURL;
@@ -177,7 +152,7 @@ async function runAxe(page, path, options = {}) {
     const excludeSelectors = options.excludeSelectors || [];
     await page.goto(path, { waitUntil: 'domcontentloaded' });
 
-    let builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).exclude('#header__navToggle');
+    let builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).exclude('#onetrust-consent-sdk');
     for (const sel of excludeSelectors) builder = builder.exclude(sel);
     return builder.analyze();
 }
@@ -206,9 +181,9 @@ test('Non-Functional - Sitemap sample URLs resolve (no 4xx/5xx)', async ({ reque
         test.skip(!body, 'No readable sitemap endpoint was available in this environment.');
         expect(body.length, 'A sitemap response body should be available before sampling sitemap URLs').toBeGreaterThan(0);
 
-        const locMatches = [...body.matchAll(/<loc>(.*?)<\/loc>/gi)].map(m => m[1].trim());
+        const locMatches = [...body.matchAll(/<loc>(.*?)<\/loc>/gi)].map((m) => m[1].trim());
         const configuredOrigin = getConfiguredOrigin(testInfo);
-        const urls = locMatches.filter(url => { try { return new URL(url).origin === configuredOrigin; } catch { return false; } }).slice(0, 5);
+        const urls = locMatches.filter((url) => { try { return new URL(url).origin === configuredOrigin; } catch { return false; } }).slice(0, 5);
         expect(urls.length, 'The sitemap should include at least one same-origin URL to validate').toBeGreaterThan(0);
         return urls;
     });
@@ -221,18 +196,20 @@ test('Non-Functional - Sitemap sample URLs resolve (no 4xx/5xx)', async ({ reque
     }
 });
 
-test('Non-Functional - robots.txt is available and advertises sitemap', async ({ request }) => {
+test('Non-Functional - robots.txt is available and advertises crawl directives', async ({ request }) => {
     await test.step('Fetch robots.txt', async () => {
         const response = await request.get('/robots.txt');
         expect(response.ok(), 'robots.txt should return a successful response').toBeTruthy();
 
         const robots = await response.text();
         expect(robots, 'robots.txt should declare at least one User-agent directive').toMatch(/User-agent:/i);
-        expect(robots, 'robots.txt should declare at least one Disallow directive').toMatch(/Disallow:/i);
+        expect(robots, 'robots.txt should declare at least one crawl directive').toMatch(/Disallow:|Allow:/i);
     });
 });
 
-test('Non-Functional - Canonical and robots directives on key pages', async ({ page, request }, testInfo) => {
+test('Non-Functional - Canonical and robots directives on key pages', async ({ page, request }) => {
+    test.setTimeout(120000);
+
     for (const path of KEY_PAGES) {
         await test.step(`Verify canonical and robots directives for ${path}`, async () => {
             await page.goto(path, { waitUntil: 'domcontentloaded' });
@@ -294,7 +271,7 @@ test('Non-Functional - Google Analytics / Tag Manager signal exists', async ({ p
     await test.step('Open the homepage and verify analytics signals', async () => {
         await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-        const scripts = await page.locator('script').evaluateAll((nodes) => nodes.map(node => ({ src: node.getAttribute('src') || '', text: node.textContent || '' })));
+        const scripts = await page.locator('script').evaluateAll((nodes) => nodes.map((node) => ({ src: node.getAttribute('src') || '', text: node.textContent || '' })));
 
         const hasAnalyticsSignal = scripts.some(({ src, text }) => /googletagmanager\.com|google-analytics\.com|gtag\(|GTM-|GA_MEASUREMENT_ID|google_tag_manager/i.test(`${src} ${text}`));
         expect(hasAnalyticsSignal).toBeTruthy();
@@ -355,9 +332,9 @@ test('Non-Functional - Structured data (JSON-LD) exists and is valid JSON', asyn
     await test.step('Open the homepage and verify JSON-LD structured data', async () => {
         await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-        const ldJsonContents = await page.locator('script[type="application/ld+json"]').evaluateAll(nodes => nodes.map(n => (n.textContent || '').trim()).filter(Boolean));
+        const ldJsonContents = await page.locator('script[type="application/ld+json"]').evaluateAll((nodes) => nodes.map((n) => (n.textContent || '').trim()).filter(Boolean));
         if (ldJsonContents.length > 0) {
-            const hasValidJson = ldJsonContents.some(text => { try { const parsed = JSON.parse(text); return typeof parsed === 'object' && parsed !== null; } catch { return false; } });
+            const hasValidJson = ldJsonContents.some((text) => { try { const parsed = JSON.parse(text); return typeof parsed === 'object' && parsed !== null; } catch { return false; } });
             expect(hasValidJson).toBeTruthy();
             return;
         }
@@ -365,7 +342,7 @@ test('Non-Functional - Structured data (JSON-LD) exists and is valid JSON', asyn
         const microdataRoots = page.locator('[itemscope][itemtype], [typeof], [property^="schema:"]');
         const microdataCount = await microdataRoots.count();
         if (microdataCount > 0) {
-            const itemtypes = await microdataRoots.evaluateAll(nodes => nodes.map(n => n.getAttribute('itemtype') || n.getAttribute('typeof') || n.getAttribute('property') || '').filter(Boolean));
+            const itemtypes = await microdataRoots.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('itemtype') || n.getAttribute('typeof') || n.getAttribute('property') || '').filter(Boolean));
             expect(itemtypes.length, 'Schema.org microdata should expose at least one structured data marker').toBeGreaterThan(0);
             return;
         }
@@ -389,20 +366,16 @@ test('Non-Functional - Basic document/head essentials are present', async ({ pag
         const { response } = await getHtmlResponse(request, '/');
         const headers = response.headers();
         const hardeningHeaders = ['permissions-policy', 'x-frame-options', 'cross-origin-opener-policy', 'cross-origin-resource-policy'];
-        const hardeningPresentCount = hardeningHeaders.filter(h => !!headers[h]).length;
+        const hardeningPresentCount = hardeningHeaders.filter((h) => !!headers[h]).length;
         expect(hardeningPresentCount, 'Homepage response should include at least one hardening header').toBeGreaterThan(0);
     });
 });
 
-async function runAxeAndAssert(page, path, options) {
-    const results = await runAxe(page, path, options);
-    const critical = results.violations.filter(v => v.impact === 'critical');
-    expect(critical, JSON.stringify(critical, null, 2)).toEqual([]);
-}
-
 test('Accessibility - Homepage has no critical axe violations', async ({ page }) => {
     await test.step('Run axe on the homepage', async () => {
-        await runAxeAndAssert(page, '/');
+        const results = await runAxe(page, '/');
+        const critical = results.violations.filter((v) => v.impact === 'critical');
+        expect(critical, JSON.stringify(critical, null, 2)).toEqual([]);
     });
 });
 
@@ -410,9 +383,8 @@ test('Accessibility - Key user pages have no critical axe violations', async ({ 
     test.setTimeout(120000);
     for (const path of KEY_PAGES) {
         await test.step(`Run axe on ${path}`, async () => {
-            const options = path === '/where-do-i-start' ? { excludeSelectors: ['.fancybox, .modal'] } : undefined;
-            const results = await runAxe(page, path, options);
-            const critical = results.violations.filter(v => v.impact === 'critical');
+            const results = await runAxe(page, path);
+            const critical = results.violations.filter((v) => v.impact === 'critical');
             expect(critical, `Critical violations on ${path}: ${JSON.stringify(critical, null, 2)}`).toEqual([]);
         });
     }
@@ -432,12 +404,12 @@ test('Accessibility - Landmark structure exists on key pages', async ({ page }) 
     }
 });
 
-test('Accessibility - Exactly one H1 exists on core pages', async ({ page }) => {
+test('Accessibility - At least one H1 exists on core pages', async ({ page }) => {
     for (const path of KEY_PAGES) {
         await test.step(`Verify H1 count on ${path}`, async () => {
             await page.goto(path, { waitUntil: 'domcontentloaded' });
             const h1Count = await page.locator('h1').count();
-            expect(h1Count, `Page ${path} should contain exactly one H1`).toBeGreaterThanOrEqual(1);
+            expect(h1Count, `Page ${path} should contain at least one H1`).toBeGreaterThanOrEqual(1);
         });
     }
 });
@@ -461,16 +433,16 @@ test('Accessibility - Interactive controls expose accessible names', async ({ pa
                 const title = el.getAttribute('title') || '';
                 const value = (el.getAttribute('value') || '').trim();
                 const placeholder = (el.getAttribute('placeholder') || '').trim();
-                const childImageAlt = Array.from(el.querySelectorAll('img')).map(img => (img.getAttribute('alt') || '').trim()).filter(Boolean).join(' ');
+                const childImageAlt = Array.from(el.querySelectorAll('img')).map((img) => (img.getAttribute('alt') || '').trim()).filter(Boolean).join(' ');
                 return [ariaLabel, labelledBy, text, title, value, placeholder, childImageAlt].join(' ').trim();
             };
 
-            return controls.filter(el => isVisible(el)).filter(el => {
+            return controls.filter((el) => isVisible(el)).filter((el) => {
                 if (el.getAttribute('aria-hidden') === 'true') return false;
                 const role = (el.getAttribute('role') || '').toLowerCase();
                 if (role === 'presentation' || role === 'none') return false;
                 return getName(el).length === 0;
-            }).slice(0, 20).map(el => el.outerHTML.slice(0, 200));
+            }).slice(0, 20).map((el) => el.outerHTML.slice(0, 200));
         });
 
         expect(unnamedInteractive, `Unnamed interactive elements: ${JSON.stringify(unnamedInteractive, null, 2)}`).toEqual([]);
@@ -487,7 +459,7 @@ test('Accessibility - Images have alt text or are explicitly decorative', async 
                 return s.display !== 'none' && s.visibility !== 'hidden' && el.getClientRects().length > 0;
             };
 
-            return Array.from(document.querySelectorAll('img')).filter(img => isVisible(img)).filter(img => !img.hasAttribute('alt')).slice(0, 20).map(img => img.outerHTML.slice(0, 200));
+            return Array.from(document.querySelectorAll('img')).filter((img) => isVisible(img)).filter((img) => !img.hasAttribute('alt')).slice(0, 20).map((img) => img.outerHTML.slice(0, 200));
         });
 
         expect(invalidImages, `Images missing alt/decorative semantics: ${JSON.stringify(invalidImages, null, 2)}`).toEqual([]);

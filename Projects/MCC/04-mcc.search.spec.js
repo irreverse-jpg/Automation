@@ -46,13 +46,7 @@ test.afterEach(async ({ page }, testInfo) => {
 //     (lowercase) and carries the current site filter as "index=", while
 //     the header overlay uses "searchText" - a minor param-naming
 //     inconsistency between the two entry points, not a defect.
-//
-// The header search overlay's submit button was previously documented as
-// partially covered by the sticky header on UAT2 - confirmed as of
-// 2026-07-16 this is no longer reproducible on either environment (the
-// button is fully clickable at its own center on both); the defensive
-// off-center click position is kept in the code anyway, see the comment
-// on `submitHeaderSearch` below.
+
 // ============================================================================
 
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';

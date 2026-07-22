@@ -1,0 +1,6 @@
+{
+  "editor.codeLens": true,
+  "testing.gutterEnabled": true,
+  "testing.defaultGutterClickAction": "run",
+  "testing.automaticallyOpenPeekView": "never"
+}

@@ -42,15 +42,6 @@ test.afterEach(async ({ page }, testInfo) => {
 //      YouTube) is visible, has the right accessible name, opens in a new
 //      tab, and points at its expected social domain.
 //
-// Updated 2026-07-16: the footer's "Ground Regulations" link was previously
-// a confirmed-broken target (href `/footer/general-ground-regulations`,
-// 404 on UAT2) that the test deliberately kept failing on. Re-verified
-// directly and the site has since moved this link to a new, working href
-// (`/information/general-ground-regulations`, HTTP 200 with a real
-// "Ground Regulations" H1) on BOTH Live and UAT2 - the test data has been
-// updated to match. No other environment-conditional logic or
-// currently-confirmed Live-vs-UAT2 differences exist in this file as of
-// this check.
 // ============================================================================
 
 const COOKIE_OVERLAY_SELECTOR = '#onetrust-consent-sdk, .cookieConsentOverlay, [class*="cookieConsentOverlay"]';

@@ -42,6 +42,11 @@ test.afterEach(async ({ page }, testInfo) => {
 //      homepage promo/body content changes between releases. Each link is
 //      clicked, verified to navigate, then the test goes back and confirms
 //      the homepage is restored before moving to the next.
+//   5. Homepage - Skip Links
+//      Discovers skip link(s) live via keyboard Tab (rather than hardcoding a
+//      label), then verifies each one is reachable again via Tab and that
+//      activating it lands on its target element. MCC has NONE as of
+//      2026-07-20, so this test is expected to fail here rather than skip.
 //
 // No environment-conditional logic or currently-confirmed Live-vs-UAT2
 // content differences exist in this file as of 2026-07-16 - the reorg that
@@ -312,6 +317,65 @@ test('Homepage - Navigate to Various Pages from the Body Links', async ({ page, 
             await acceptCookiesIfPresent(page);
             await expect(page, `Going back from ${target.label} should restore the homepage URL`).toHaveURL(homepageUrl);
             await waitForHomepageContent(page);
+        });
+    }
+});
+
+// Skip link(s) are discovered live via keyboard Tab rather than hardcoded, since sites differ on how
+// many exist and what they're labelled (e.g. "Skip to content" vs "Skip to main content"/"Skip to menu").
+// Missing a skip link entirely is a real accessibility gap, so this test is expected to fail on sites
+// that don't have one rather than being skipped.
+test('Homepage - Skip Links', async ({ page }) => {
+    test.setTimeout(60000);
+
+    async function tabToNextLink() {
+        await page.keyboard.press('Tab');
+        return page.evaluate(() => {
+            const el = document.activeElement;
+            if (!el || el.tagName !== 'A') return null;
+            return { text: (el.textContent || '').trim(), href: el.getAttribute('href') || '' };
+        });
+    }
+
+    const skipLinks = await test.step('Discover skip links via keyboard Tab', async () => {
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        await page.waitForLoadState('load').catch(() => { });
+        await waitForAndAcceptCookieBanner(page);
+
+        const links = [];
+        const seenHrefs = new Set();
+        for (let i = 0; i < 8; i++) {
+            const info = await tabToNextLink();
+            if (info && /skip to/i.test(info.text) && info.href.startsWith('#') && !seenHrefs.has(info.href)) {
+                seenHrefs.add(info.href);
+                links.push(info);
+            }
+        }
+        return links;
+    });
+
+    expect(skipLinks.length, 'Homepage should expose at least one "Skip to..." link reachable via keyboard Tab').toBeGreaterThan(0);
+
+    for (const skipLink of skipLinks) {
+        await test.step(`Verify "${skipLink.text}" navigates to its target`, async () => {
+            await page.goto('/', { waitUntil: 'domcontentloaded' });
+            await page.waitForLoadState('load').catch(() => { });
+            await waitForAndAcceptCookieBanner(page);
+
+            let matched = false;
+            for (let i = 0; i < 8 && !matched; i++) {
+                const info = await tabToNextLink();
+                if (info && info.href === skipLink.href) matched = true;
+            }
+            expect(matched, `Should be able to Tab back to the "${skipLink.text}" skip link`).toBeTruthy();
+
+            await page.keyboard.press('Enter');
+            await page.waitForTimeout(300);
+
+            expect(page.url(), `Activating "${skipLink.text}" should update the URL to include ${skipLink.href}`).toContain(skipLink.href);
+
+            const targetId = skipLink.href.slice(1);
+            await expect(page.locator(`#${targetId}`), `Skip link target "${skipLink.href}" should exist on the page`).toBeAttached();
         });
     }
 });

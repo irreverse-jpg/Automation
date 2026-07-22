@@ -19,11 +19,18 @@ For workspace orientation and onboarding context, read `Shared/README.md` first.
 - `.gitignore`
 - `.github/workflows/playwright.yml`
 - `README.md` (optional)
-- `01-...` to `09-...` initial specs
-- `10-...load.k6.js` (if performance testing applies)
+- `01-<project>.homepage.spec.js`, `02-<project>.meganav.spec.js`, `03-<project>.footer.spec.js`, `04-<project>.search.spec.js` — scaffold these 4 by default for every new project. Across PBS/Withers/MCC these same 4 areas always end up as the first 4 specs (numbering order can vary slightly per project - match whatever the new site's actual structure calls for), so start with them rather than waiting to be asked. CareUK is the one exception on record (its "search" is folded into a care-homes-specific spec instead of a generic sitewide search) - use judgement if the new site doesn't have an equivalent generic search feature.
+- Further `NN-...` specs for whatever other site sections/features exist, added as they're built out.
+- `NN-...nonfunctional.spec.js` and `NN-...load.k6.js` — scaffold both by default alongside the 4 specs above, not just when explicitly requested. Number them after the last content spec (see section 9 for the load file's own conventions).
 - `reporters/findings-reporter.js` (see section 8 below)
 
 Before marking this section complete, verify the new project can run `npm test` locally.
+
+## 2a) Register the project in the multi-root workspace file
+
+- Add `{ "name": "<ProjectName>", "path": "<ProjectName>" }` to the `folders` array in `Projects/automation-tests.code-workspace`.
+- This is a *separate* file from the root `Automation.code-workspace` (which just points at the whole `Projects` directory as one root and needs no edit). `automation-tests.code-workspace` is the one actually opened day-to-day, and it hardcodes each client as its own named folder root.
+- Skipping this step is easy to miss and has a specific, confusing symptom: the new project's files, Explorer entry, and Test Explorer entries are all invisible in VS Code even though the project itself is fully valid and `npx playwright test --list` finds its tests fine from the terminal. Don't waste time checking OneDrive sync state or the Playwright extension's config toggle first — check this file first.
 
 ## 3) Naming conventions
 
@@ -65,7 +72,18 @@ Every current project (MCC, PBS, Withers, CareUK) produces a plain-language find
 - Add `findings-report.xlsx` and `findings-reports/` to `.gitignore` — these are regenerated per run, not checked in.
 - Keep using a human-readable message as the 2nd argument to every `expect()` call (already the convention across all 4 projects) — the reporter surfaces that message as the finding's "why," so there's no separate explanation to maintain.
 
-## 9) VS Code Test Explorer troubleshooting (Playwright)
+## 9) k6 load test quick guide
+
+Every current project's k6 load test file (`Projects/PBS/10-pbs.load.k6.js`, `Projects/Withers/14-withers.load.k6.js`, `Projects/MCC/14-mcc.load.k6.js`, `Projects/CareUK/15-careuk.load.k6.js`) follows the same structure so anyone - not just the person who wrote it - can run and read the results. Set this up for every new project's k6 file:
+
+- Copy an existing project's `*.load.k6.js` wholesale as the starting point (they're all functionally identical apart from the base URL, page paths, and env var names) rather than writing one from scratch.
+- Keep the `QUICK GUIDE` block comment near the top - what the file does, the 5 scenarios (`smoke`/`load`/`spike`/`soak`/`all`), copy-pasteable `k6 run` commands for both "from the Projects folder" and "from this project's own folder", the exact list of pages the script exercises, and a "how to read results fast" section.
+- Update the page list in both the `QUICK GUIDE` comment and the `browseCorePages()` function to the new project's own real, confirmed page paths - verify each path actually resolves (e.g. `grep` existing spec files' `goto()`/`route:` calls for already-confirmed real paths, or check directly) rather than guessing plausible-looking URLs.
+- Keep the richer `handleSummary()` (Final verdict, Gate result per threshold, main health metrics, failing checks list) - it's what makes a FAIL immediately actionable instead of just a wall of raw k6 metrics.
+- Keep the `BASE_URL || <PROJECT>_BASE_URL || K6_BASE_URL` env var fallback chain and the `ORIGIN`-based root-level `/robots.txt`/`/sitemap.xml` checks.
+- Update `package.json`'s `load:smoke`/`load:load`/`load:spike`/`load:soak`/`load:all` scripts to reference the new file's exact name.
+
+## 10) VS Code Test Explorer troubleshooting (Playwright)
 
 Use this section when test Run/Debug buttons are missing, or when one workspace folder appears but another does not.
 
