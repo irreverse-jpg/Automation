@@ -21,6 +21,10 @@
             "path": "RSC"
         },
         {
+            "name": "VariousTests",
+            "path": "VariousTests"
+        },
+        {
             "name": "Shared",
             "path": "../Shared"
         }

@@ -39,27 +39,27 @@ Replace BASE_URL if needed, example for Live.
 
 From the Projects folder (cd .../Projects):
 - Smoke:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke RSC/10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke RSC/16-rsc.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load RSC/10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load RSC/16-rsc.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike RSC/10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike RSC/16-rsc.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak RSC/10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak RSC/16-rsc.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com RSC/10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com RSC/16-rsc.load.k6.js
 
 From the RSC folder (cd .../Projects/RSC):
 - Smoke:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke 10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke 16-rsc.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load 10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load 16-rsc.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike 10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike 16-rsc.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak 10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak 16-rsc.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com 10-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com 16-rsc.load.k6.js
 
 What pages this script exercises
 --------------------------------
@@ -70,10 +70,19 @@ What pages this script exercises
     - /policy-and-campaigning
     - /standards-and-recognition
     - /funding-and-support
+    - /events
     - /news
+    - /about-us
+    - /contact-us
+    - /help-and-legal
 - Root-level technical endpoints from the site origin:
     - /robots.txt
     - /sitemap.xml
+
+Updated 2026-07-24: added /events and the 3 footer-column landing pages (/about-us,
+/contact-us, /help-and-legal) now that every top-level section has its own dedicated
+Playwright spec (05-14) - this keeps the load profile representative of the whole site
+rather than just the sections that existed when this script was first written.
 
 How to read results fast
 ------------------------
@@ -323,7 +332,19 @@ export function browseCorePages() {
     requestAndCheck('/funding-and-support');
     sleep(Math.random() * 1 + 0.2);
 
+    requestAndCheck('/events');
+    sleep(Math.random() * 1 + 0.2);
+
     requestAndCheck('/news');
+    sleep(Math.random() * 1 + 0.2);
+
+    requestAndCheck('/about-us');
+    sleep(Math.random() * 1 + 0.2);
+
+    requestAndCheck('/contact-us');
+    sleep(Math.random() * 1 + 0.2);
+
+    requestAndCheck('/help-and-legal');
     sleep(Math.random() * 1 + 0.2);
 
     requestAndCheck('/robots.txt', { type: 'seo' }, { rootLevel: true });
@@ -335,7 +356,13 @@ export function browseCorePages() {
         '/membership',
         '/publishing',
         '/policy-and-campaigning',
+        '/standards-and-recognition',
+        '/funding-and-support',
+        '/events',
         '/news',
+        '/about-us',
+        '/contact-us',
+        '/help-and-legal',
     ];
     const randomPath = extra[Math.floor(Math.random() * extra.length)];
     requestAndCheck(randomPath, { type: 'random' });

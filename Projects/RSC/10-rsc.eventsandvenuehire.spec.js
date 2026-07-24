@@ -19,62 +19,90 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 // ============================================================================
-// Coverage notes - Policy and campaigning section (top nav "Policy and campaigning")
+// Coverage notes - Events and venue hire section (top nav "Events and venue hire")
 // ============================================================================
-// Scope: every page under the "Policy and campaigning" mega-nav branch,
+// Scope: every page under the "Events and venue hire" mega-nav branch,
 // discovered via direct DOM probing of the real meganav on both QA and Live
-// (not guessed) - 8 top-level items, one ("Science culture") with 2 children.
-// 10 unique pages total.
+// (not guessed) - 12 unique Live pages under 2 top-level branches (Events,
+// Venue hire).
 //
 // Tests in this file:
-//   1-10. Policy and Campaigning - <Page> Traversal (one per POLICY_PAGES entry)
+//   1-12. Events and Venue Hire - <Page> Traversal (one per EVENTS_PAGES entry)
 //      Title/H1/breadcrumb/footer/card-count - the standard page-chrome check
-//      used across every project's menu-item specs. The "Sustainability" page
-//      is handled as its own dedicated test (see ENVIRONMENT DRIFT below)
-//      rather than in the shared config loop, since its href AND H1 both
-//      differ by environment, not just its H1.
-//   11. Policy and Campaigning - Accordion Functionality
-//      Expands/collapses a sample of the Bootstrap-style accordion on
-//      /policy-and-campaigning/get-involved (13 real accordion items).
-//   12. Policy and Campaigning - YouTube Video Playback
+//      used across every project's menu-item specs. 11 of the 12 are
+//      liveOnly-gated (see STRUCTURAL DRIFT below); the root "Events" page
+//      is NOT gated since a real (but unrelated) page exists at the same URL
+//      on QA too - see the H1-drift note below instead.
+//   13. Events and Venue Hire - Accordion Functionality
+//      Expands/collapses the real Bootstrap-style accordion on
+//      /events/submit-an-event (4 real items - the richest accordion page
+//      found in this section; much smaller than other sections' accordion
+//      pages, so the "large number of items" threshold used elsewhere is
+//      relaxed here).
+//   14. Events and Venue Hire - YouTube Video Playback
 //      Plays/fullscreens/exits fullscreen/pauses a real YouTube embed on
-//      /policy-and-campaigning/outreach, reusing the exact same MCC-derived
-//      sequence already used in 06-rsc.publishing.spec.js. This page's video
-//      lives inside a COLLAPSED accordion item ("Public attitudes to
-//      chemistry") - confirmed via direct DOM probe that the iframe is
-//      simply not visible/interactable until that accordion is expanded.
-//   13. Policy and Campaigning - Education Team Contact Form - <journey>
-//      "Contact our education team" (same JotForm as every other project
-//      contact-team form, team=education) on /policy-and-campaigning/education
-//      - confirmed Live-only (see ENVIRONMENT DRIFT below), gated via
-//      test.skip() on element presence rather than a hardcoded environment
-//      check, so it starts running for real the moment QA syncs it in.
+//      /venue-hire/our-rooms (6 real room-tour videos - confirmed NOT hidden
+//      behind that page's one accordion item, which is an unrelated
+//      "Room capacities" table). liveOnly (see STRUCTURAL DRIFT below).
+//   15. Events and Venue Hire - Events Team Contact Form - <journey>
+//      "Contact our events team" (same JotForm as every other project
+//      contact-team form, team=events) on /events/event-support-and-guidance
+//      - liveOnly, gated the same way as the rest of this branch since the
+//      page itself doesn't exist on QA.
 //
-// ENVIRONMENT DRIFT confirmed 2026-07-21 (same category as prior specs'
-// Members'-Area/Journals/H1-wording findings):
-//   - "Sustainability" is a genuinely different page per environment, not
-//     just a relabelled link: Live is /policy-and-campaigning/sustainability
-//     (H1 "Sustainability"), QA is
-//     /policy-and-campaigning/environmental-sustainability (H1
-//     "Environmental sustainability") - confirmed each URL 404s on the OTHER
-//     environment, so this isn't a redirect/alias, it's two independently
-//     content-managed pages. Handled with its own baseURL-conditional test
-//     rather than forcing it into the shared PAGES loop.
-//   - "Discovery and innovation" (menu label, both environments) has H1
-//     "Discovery and innovation" on QA but "Research and innovation" on Live.
-//   - "Resources and toolkits" (menu label, both environments) has H1
-//     "Resources and toolkits" on QA but "Resources and toolkits to help you
-//     promote inclusion" on Live.
-//   - "Contact our education team" (a `.script--jotform`/lightbox card on
-//     the Education page) exists on Live but is entirely absent from QA's
-//     current build of that page - confirmed via direct probe, not a menu
-//     visibility difference like the Membership spec's obituaries pattern,
-//     since the Education PAGE itself exists on both environments, just
-//     without this specific card on QA.
-//   - The "sustainability" pages otherwise differ in card/accordion/video
-//     counts too (independently authored content, not a content-sync gap)
-//     - confirmed via direct probe, so no shared assertions are made about
-//     its internal content beyond the standard page-chrome/footer checks.
+// STRUCTURAL DRIFT confirmed 2026-07-23 (the most extensive drift found in
+// this project so far - not a few pages differing, but almost the entire
+// branch): Live's current content lives under /events/* and /venue-hire/*
+// (12 pages total, discovered via direct DOM probe of Live's real meganav).
+// QA's meganav for this exact same top-level item ("Events and venue hire")
+// instead points at an entirely different, differently-structured branch
+// under /our-events/* - 17 pages covering different sub-topics entirely
+// (an "Our events"/webinars branch with RSC Desktop Seminars/Science Camp
+// webinars, and a MUCH deeper "Venue hire" branch with 12 venue-hire-by-
+// occasion pages - weddings/product launches/private dining/networking/
+// meetings and AGMs/filming/conferences/celebrations/award ceremonies - none
+// of which exist on Live's current, much leaner Venue hire section).
+// Confirmed (not guessed) that Live has since migrated off the /our-events/*
+// URL structure entirely: https://www.rsc.org/our-events and
+// https://www.rsc.org/our-events/venue-hire both 301-redirect to /events and
+// /venue-hire respectively. Per this project's "build to current Live
+// content" convention (same as Publishing's/Standards and recognition's
+// Live-only pages), every page in EVENTS_PAGES is built from Live's current
+// structure and gated liveOnly via a real page.goto() + response.status()
+// === 404 check - confirmed all 11 non-root URLs genuinely 404 on QA (not
+// simply unlinked from QA's nav - the URLs themselves don't resolve there).
+//
+// ONE EXCEPTION, not gated liveOnly: https://[qa]/events itself returns a
+// real 200 with GENUINELY DIFFERENT, unrelated content (H1 "Events" - an
+// events-listing/search page with its own real cards) rather than 404 -
+// confirmed via direct probe this is NOT the section's actual overview page
+// on QA (that lives at /our-events, H1 "Events overview"), just a
+// coincidentally-identical URL slug pointing at something else entirely.
+// Handled the same way as this project's other H1-content-drift findings -
+// a regex accepting either wording - rather than a liveOnly skip, since a
+// real, valid page genuinely exists at this URL on both environments (they
+// just serve unrelated content).
+//
+// "Contact our events team" (team=events) - same JotForm 250933318259966
+// pattern as Membership/Publishing/Policy and campaigning's contact-team
+// cards - was confirmed present on 4 different Live pages under /events/*
+// (Find an event, UK and Ireland events, Member network events, Event
+// support and guidance) but is clearly a single shared sidebar widget
+// repeated across them, not 4 distinct forms - tested once here on Event
+// support and guidance, matching this project's one-form-per-team
+// convention. Confirmed absent on QA's equivalent /our-events/support-for-
+// events page (not simply hidden), so gated the same liveOnly way as the
+// rest of this branch (via the hosting page's own 404 check) rather than
+// Policy and campaigning's element-presence gate, since here the whole page
+// is unavailable, not just the card.
+//
+// NOTE: "Events Team Contact Form - Validate Successful Submission" will
+// currently ALWAYS skip on both environments - it requires QA (real
+// submissions must not be sent on Live, per project instruction) AND
+// requires the hosting page to exist (only exists on Live, per the
+// liveOnly gate above). This is an expected, real consequence of the
+// structural drift above, not an oversight - it will start running for
+// real the moment QA's content syncs to Live's current structure.
 // ============================================================================
 
 async function waitForAndAcceptCookieBanner(page) {
@@ -117,32 +145,44 @@ function isQaEnvironment(baseURL) {
 }
 
 // ============================================================================
-// Traversal - every page in the Policy and campaigning mega-nav branch
-// (except "Sustainability", handled separately below - see ENVIRONMENT DRIFT)
+// Traversal - every page in the Events and venue hire mega-nav branch (built
+// from Live's current structure - see STRUCTURAL DRIFT above)
 // ============================================================================
-const POLICY_PAGES = [
-    { testName: "Policy and Campaigning - Making the World a Better Place Traversal", href: "/policy-and-campaigning", h1: "Making the world a better place", breadcrumbParent: null },
-    { testName: "Policy and Campaigning - Discovery and Innovation Traversal", href: "/policy-and-campaigning/discovery-and-innovation", h1: /^(Research and innovation|Discovery and innovation)$/, breadcrumbParent: null },
-    { testName: "Policy and Campaigning - Science Culture Traversal", href: "/policy-and-campaigning/science-culture", h1: "Science culture", breadcrumbParent: null },
-    { testName: "Policy and Campaigning - Resources and Toolkits Traversal", href: "/policy-and-campaigning/science-culture/resources-and-toolkits", h1: /^Resources and toolkits( to help you promote inclusion)?$/, breadcrumbParent: "Science culture" },
-    { testName: "Policy and Campaigning - Activities and Collaborations Traversal", href: "/policy-and-campaigning/science-culture/activities-and-collaborations", h1: "Activities and collaborations", breadcrumbParent: "Science culture" },
-    { testName: "Policy and Campaigning - Education Traversal", href: "/policy-and-campaigning/education", h1: "Education", breadcrumbParent: null },
-    { testName: "Policy and Campaigning - Outreach Traversal", href: "/policy-and-campaigning/outreach", h1: "Get involved with public engagement and outreach", breadcrumbParent: null },
-    { testName: "Policy and Campaigning - Get Involved Traversal", href: "/policy-and-campaigning/get-involved", h1: "Get involved", breadcrumbParent: null },
-    { testName: "Policy and Campaigning - Policy Library Traversal", href: "/policy-and-campaigning/policy-library", h1: "Policy library", breadcrumbParent: null },
+const EVENTS_PAGES = [
+    // Not liveOnly - a real, different page exists at this same URL on QA too (see above).
+    { testName: "Events and Venue Hire - Events Overview Traversal", href: "/events", h1: /^(Events overview|Events)$/, breadcrumbParent: null },
+    { testName: "Events and Venue Hire - Find an Event Traversal", href: "/events/find-an-event", h1: "Find an event", breadcrumbParent: "Events", liveOnly: true },
+    { testName: "Events and Venue Hire - UK and Ireland Events Traversal", href: "/events/find-an-event/uk-and-ireland-events", h1: "UK and Ireland events", breadcrumbParent: "Find an event", liveOnly: true },
+    { testName: "Events and Venue Hire - Member Network Events Traversal", href: "/events/find-an-event/member-network-events", h1: "Member network events", breadcrumbParent: "Find an event", liveOnly: true },
+    { testName: "Events and Venue Hire - Events by Topic Traversal", href: "/events/find-an-event/events-by-topic", h1: "Events by topic", breadcrumbParent: "Find an event", liveOnly: true },
+    { testName: "Events and Venue Hire - Submit an Event Traversal", href: "/events/submit-an-event", h1: "Submit an event", breadcrumbParent: "Events", liveOnly: true },
+    { testName: "Events and Venue Hire - Event Support and Guidance Traversal", href: "/events/event-support-and-guidance", h1: "Event support and guidance", breadcrumbParent: "Events", liveOnly: true },
+    { testName: "Events and Venue Hire - Venue Hire Traversal", href: "/venue-hire", h1: "The Royal Society of Chemistry at Burlington House", breadcrumbParent: null, liveOnly: true },
+    { testName: "Events and Venue Hire - Our Rooms Traversal", href: "/venue-hire/our-rooms", h1: "Our rooms", breadcrumbParent: "Venue hire", liveOnly: true },
+    { testName: "Events and Venue Hire - Event Ideas Traversal", href: "/venue-hire/event-ideas", h1: "Event ideas", breadcrumbParent: "Venue hire", liveOnly: true },
+    { testName: "Events and Venue Hire - Catering Traversal", href: "/venue-hire/catering", h1: "Catering", breadcrumbParent: "Venue hire", liveOnly: true },
+    { testName: "Events and Venue Hire - Enquiries and Visits Traversal", href: "/venue-hire/enquiries-and-visits", h1: "Contact our venue hire team", breadcrumbParent: "Venue hire", liveOnly: true },
 ];
 
-for (const config of POLICY_PAGES) {
+for (const config of EVENTS_PAGES) {
     test(config.testName, async ({ page }) => {
-        // The full link/card click-through check (verifyPageLinksNavigateCorrectly, added
-        // 2026-07-22) can involve dozens of individual navigations on content-heavy pages -
-        // 60s wasn't enough on Live's slower response times (confirmed via a genuine "Test
-        // timeout exceeded" while building 09-rsc.fundingandsupport.spec.js, not a site bug),
-        // bumped generously here and in every other spec's equivalent Traversal loop.
+        // The full link/card click-through check (verifyPageLinksNavigateCorrectly) can
+        // involve dozens of individual navigations on content-heavy pages - bumped generously
+        // here to match the convention already applied across every other spec in this project.
         test.setTimeout(600000);
 
-        await test.step(`Open ${config.href} and verify page chrome`, async () => {
-            await openPage(page, config.href);
+        if (config.liveOnly) {
+            const response = await test.step(`Open ${config.href} and check it exists on this environment`, async () => {
+                return openPage(page, config.href);
+            });
+            test.skip(!response || response.status() === 404, 'This page does not exist on this environment - see STRUCTURAL DRIFT.');
+        } else {
+            await test.step(`Open ${config.href} and verify page chrome`, async () => {
+                await openPage(page, config.href);
+            });
+        }
+
+        await test.step('Verify page chrome (H1 and breadcrumb)', async () => {
             await expectPageChrome(page, { h1: config.h1, breadcrumbParent: config.breadcrumbParent });
         });
 
@@ -161,36 +201,9 @@ for (const config of POLICY_PAGES) {
     });
 }
 
-// "Sustainability"/"Environmental sustainability" - genuinely different page per environment
-// (different URL, different H1, different content) - see ENVIRONMENT DRIFT above.
-test('Policy and Campaigning - Sustainability Traversal', async ({ page, baseURL }) => {
-    test.setTimeout(600000);
-
-    const href = isQaEnvironment(baseURL) ? '/policy-and-campaigning/environmental-sustainability' : '/policy-and-campaigning/sustainability';
-    const h1 = isQaEnvironment(baseURL) ? 'Environmental sustainability' : 'Sustainability';
-
-    await test.step(`Open ${href} and verify page chrome`, async () => {
-        await openPage(page, href);
-        await expectPageChrome(page, { h1, breadcrumbParent: null });
-    });
-
-    await test.step('Verify the page exposes at least one content card', async () => {
-        const cardCount = await page.locator('.card').count();
-        expect(cardCount, `${href} should expose at least one content card`).toBeGreaterThan(0);
-    });
-
-    await test.step('Verify every link/card on the page navigates correctly', async () => {
-        await verifyPageLinksNavigateCorrectly(page, href, { openPage, waitForAndAcceptCookieBanner, expect, test });
-    });
-
-    await test.step('Verify footer visibility', async () => {
-        await verifyFooterVisible(page);
-    });
-});
-
 // ============================================================================
-// Accordion functionality (Bootstrap-style accordion, same component as
-// 06-rsc.publishing.spec.js's - .accordion-item/.accordion-button/.accordion-collapse)
+// Accordion functionality (Bootstrap-style accordion, same component used in
+// 06/07/08's specs - .accordion-item/.accordion-button/.accordion-collapse)
 // ============================================================================
 async function toggleBootstrapAccordionAndVerify(item, contextLabel) {
     const button = item.locator('.accordion-button').first();
@@ -226,17 +239,21 @@ async function toggleBootstrapAccordionAndVerify(item, contextLabel) {
     }).toBe(wasExpanded);
 }
 
-test('Policy and Campaigning - Accordion Functionality', async ({ page }) => {
+test('Events and Venue Hire - Accordion Functionality', async ({ page, baseURL }) => {
     test.setTimeout(90000);
 
-    await test.step('Open the Get involved page', async () => {
-        await openPage(page, '/policy-and-campaigning/get-involved');
+    const response = await test.step('Open the Submit an event page', async () => {
+        return openPage(page, '/events/submit-an-event');
     });
+    test.skip(!response || response.status() === 404, 'This page does not exist on this environment - see STRUCTURAL DRIFT.');
 
     await test.step('Verify a sample of the real accordion items expand/collapse correctly', async () => {
         const items = page.locator('.accordion-item');
         const count = await items.count();
-        expect(count, 'This page should expose a large number of real accordion items').toBeGreaterThan(10);
+        // This section's richest accordion page only has 4 real items (much smaller than
+        // Publishing/Standards and recognition's 20-40+ item pages) - relaxed threshold
+        // accordingly rather than reusing the ">10" convention used elsewhere.
+        expect(count, 'This page should expose a handful of real accordion items').toBeGreaterThan(2);
 
         const indexesToCheck = new Set([0, count - 1, Math.floor(count / 2)]);
         for (const index of indexesToCheck) {
@@ -247,7 +264,7 @@ test('Policy and Campaigning - Accordion Functionality', async ({ page }) => {
 
 // ============================================================================
 // YouTube video playback (reuses the same ytm-skin play/fullscreen/pause
-// sequence as 06-rsc.publishing.spec.js, verbatim)
+// sequence as 06/07's specs, verbatim)
 // ============================================================================
 async function testYouTubeVideo(videoIframe, videoFrame, page) {
     await videoIframe.scrollIntoViewIfNeeded();
@@ -295,27 +312,23 @@ async function testYouTubeVideo(videoIframe, videoFrame, page) {
     }
 }
 
-test('Policy and Campaigning - YouTube Video Playback', async ({ page }) => {
+test('Events and Venue Hire - YouTube Video Playback', async ({ page }) => {
     test.setTimeout(90000);
 
-    await test.step('Open the Outreach page', async () => {
-        await openPage(page, '/policy-and-campaigning/outreach');
+    const response = await test.step('Open the Our rooms page', async () => {
+        return openPage(page, '/venue-hire/our-rooms');
     });
+    test.skip(!response || response.status() === 404, 'This page does not exist on this environment - see STRUCTURAL DRIFT.');
 
-    await test.step('Expand the accordion item containing the video ("Public attitudes to chemistry")', async () => {
-        const accordionItem = page.locator('.accordion-item', { has: page.locator('iframe[src*="youtube"]') }).first();
-        await accordionItem.locator('.accordion-button').first().click();
-        await page.waitForTimeout(600);
-    });
-
-    await test.step('Play, fullscreen, exit fullscreen, and pause the video', async () => {
+    await test.step('Play, fullscreen, exit fullscreen, and pause a video', async () => {
         const youTubeCount = await page.locator('iframe[src*="youtube"]').count();
         expect(youTubeCount, 'This page should expose at least one YouTube video').toBeGreaterThan(0);
 
         // Pin the exact iframe by its real src rather than re-querying ":visible" for every
-        // interaction - confirmed necessary in 06-rsc.publishing.spec.js when a page has
-        // multiple YouTube iframes; harmless (and kept for consistency) here where there's
-        // only one.
+        // interaction - this page has 6 YouTube iframes (one per room), so re-querying
+        // ":visible" after the fullscreen enter/exit dance risks resolving to a different
+        // iframe than the one actually played, same fix already needed in
+        // 06-rsc.publishing.spec.js's video test.
         const videoSrc = await page.locator('iframe[src*="youtube"]:visible').first().getAttribute('src');
         const stableSelector = `iframe[src="${videoSrc}"]`;
         const visibleYouTube = page.locator(stableSelector).first();
@@ -325,19 +338,15 @@ test('Policy and Campaigning - YouTube Video Playback', async ({ page }) => {
 });
 
 // ============================================================================
-// "Contact our education team" - same JotForm (250933318259966) already used
-// by 05-rsc-membership.spec.js and 06-rsc.publishing.spec.js, Live-only (see
-// ENVIRONMENT DRIFT above).
+// "Contact our events team" - same JotForm (250933318259966) already used by
+// every other project spec, liveOnly (see STRUCTURAL DRIFT above).
 // ============================================================================
 function contactModalFrame(page) {
     return page.frameLocator('iframe[src*="250933318259966"]').first();
 }
 
-async function openEducationContactModal(page) {
-    // The trigger button's label differs by environment: QA reads "Send message" (same as
-    // every other project contact-team card), Live reads "Send us an email " - confirmed
-    // 2026-07-21. Match on the shared lightbox trigger class instead of the button's text.
-    const card = page.locator('.card', { hasText: 'Contact our education team' });
+async function openEventsContactModal(page) {
+    const card = page.locator('.card', { hasText: 'Contact our events team' });
     const sendMessageButton = card.locator('button[class*="lightbox-250933318259966"]');
     await sendMessageButton.scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
@@ -352,15 +361,14 @@ async function submitContactModalForm(page) {
     await submitButton.click();
 }
 
-test('Policy and Campaigning - Education Team Contact Form - Verify it is Present', async ({ page }) => {
-    const found = await test.step('Open Education and check for the "Contact our education team" card', async () => {
-        await openPage(page, '/policy-and-campaigning/education');
-        return await page.locator('.card', { hasText: 'Contact our education team' }).isVisible().catch(() => false);
+test('Events and Venue Hire - Events Team Contact Form - Verify it is Present', async ({ page }) => {
+    const response = await test.step('Open Event support and guidance', async () => {
+        return openPage(page, '/events/event-support-and-guidance');
     });
-    test.skip(!found, 'The "Contact our education team" card does not exist yet on this environment - see ENVIRONMENT DRIFT.');
+    test.skip(!response || response.status() === 404, 'This page does not exist on this environment - see STRUCTURAL DRIFT.');
 
     await test.step('Open the contact modal', async () => {
-        await openEducationContactModal(page);
+        await openEventsContactModal(page);
     });
 
     await test.step('Verify the key fields are visible', async () => {
@@ -373,15 +381,14 @@ test('Policy and Campaigning - Education Team Contact Form - Verify it is Presen
     });
 });
 
-test('Policy and Campaigning - Education Team Contact Form - Validate When All Fields Empty', async ({ page }) => {
-    const found = await test.step('Open Education and check for the "Contact our education team" card', async () => {
-        await openPage(page, '/policy-and-campaigning/education');
-        return await page.locator('.card', { hasText: 'Contact our education team' }).isVisible().catch(() => false);
+test('Events and Venue Hire - Events Team Contact Form - Validate When All Fields Empty', async ({ page }) => {
+    const response = await test.step('Open Event support and guidance', async () => {
+        return openPage(page, '/events/event-support-and-guidance');
     });
-    test.skip(!found, 'The "Contact our education team" card does not exist yet on this environment - see ENVIRONMENT DRIFT.');
+    test.skip(!response || response.status() === 404, 'This page does not exist on this environment - see STRUCTURAL DRIFT.');
 
     await test.step('Open the contact modal', async () => {
-        await openEducationContactModal(page);
+        await openEventsContactModal(page);
     });
 
     await test.step('Submit the form with all required fields empty', async () => {
@@ -397,15 +404,14 @@ test('Policy and Campaigning - Education Team Contact Form - Validate When All F
     });
 });
 
-test('Policy and Campaigning - Education Team Contact Form - Validate Partial Submission', async ({ page }) => {
-    const found = await test.step('Open Education and check for the "Contact our education team" card', async () => {
-        await openPage(page, '/policy-and-campaigning/education');
-        return await page.locator('.card', { hasText: 'Contact our education team' }).isVisible().catch(() => false);
+test('Events and Venue Hire - Events Team Contact Form - Validate Partial Submission', async ({ page }) => {
+    const response = await test.step('Open Event support and guidance', async () => {
+        return openPage(page, '/events/event-support-and-guidance');
     });
-    test.skip(!found, 'The "Contact our education team" card does not exist yet on this environment - see ENVIRONMENT DRIFT.');
+    test.skip(!response || response.status() === 404, 'This page does not exist on this environment - see STRUCTURAL DRIFT.');
 
     await test.step('Open the contact modal', async () => {
-        await openEducationContactModal(page);
+        await openEventsContactModal(page);
     });
 
     await test.step('Fill only the email field and submit', async () => {
@@ -422,30 +428,29 @@ test('Policy and Campaigning - Education Team Contact Form - Validate Partial Su
     });
 });
 
-test('Policy and Campaigning - Education Team Contact Form - Validate Successful Submission', async ({ page, baseURL }) => {
+test('Events and Venue Hire - Events Team Contact Form - Validate Successful Submission', async ({ page, baseURL }) => {
     test.skip(!isQaEnvironment(baseURL), 'Real form submissions must not be sent on Live - QA only, per project instruction.');
     test.setTimeout(60000);
 
-    const found = await test.step('Open Education and check for the "Contact our education team" card', async () => {
-        await openPage(page, '/policy-and-campaigning/education');
-        return await page.locator('.card', { hasText: 'Contact our education team' }).isVisible().catch(() => false);
+    const response = await test.step('Open Event support and guidance', async () => {
+        return openPage(page, '/events/event-support-and-guidance');
     });
-    test.skip(!found, 'The "Contact our education team" card does not exist yet on this environment - see ENVIRONMENT DRIFT.');
+    test.skip(!response || response.status() === 404, 'This page does not exist on this environment - see STRUCTURAL DRIFT.');
 
-    const counterKey = 'policy-education-team';
+    const counterKey = 'events-support-team';
     const submissionNumber = getCurrentSubmissionNumber(counterKey);
 
     await test.step('Open the contact modal', async () => {
-        await openEducationContactModal(page);
+        await openEventsContactModal(page);
     });
 
     await test.step(`Fill and submit the form with unique submission #${submissionNumber}`, async () => {
         const frame = contactModalFrame(page);
-        await frame.locator('#input_16').fill(`RSCPolicyEducation${submissionNumber}`);
+        await frame.locator('#input_16').fill(`RSCEventsSupport${submissionNumber}`);
         await frame.locator('#input_17').fill(`Contact${submissionNumber}`);
-        await frame.locator('#input_9').fill(`rsc.policy.education.${submissionNumber}@example.com`);
+        await frame.locator('#input_9').fill(`rsc.events.support.${submissionNumber}@example.com`);
         await frame.locator('#input_29').selectOption({ label: 'No' });
-        await frame.locator('#input_11').fill(`Education team enquiry test submission ${submissionNumber} - generated by automation.`);
+        await frame.locator('#input_11').fill(`Events team enquiry test submission ${submissionNumber} - generated by automation.`);
         await frame.locator('label[for="input_27_0"]', { hasText: 'I agree' }).click();
         await submitContactModalForm(page);
     });

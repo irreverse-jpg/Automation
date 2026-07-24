@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { verifyPageLinksNavigateCorrectly } = require('./linkNavigationHelpers');
 const { getCurrentSubmissionNumber, incrementSubmissionNumber } = require('./submissionCounter');
 
 // Captures the page's web address at the moment a test fails, so the
@@ -234,7 +235,12 @@ const PUBLISHING_PAGES = [
 
 for (const config of PUBLISHING_PAGES) {
     test(config.testName, async ({ page }) => {
-        test.setTimeout(60000);
+        // The full link/card click-through check (verifyPageLinksNavigateCorrectly, added
+        // 2026-07-22) can involve dozens of individual navigations on content-heavy pages -
+        // 60s wasn't enough on Live's slower response times (confirmed via a genuine "Test
+        // timeout exceeded" while building 09-rsc.fundingandsupport.spec.js, not a site bug),
+        // bumped generously here and in every other spec's equivalent Traversal loop.
+        test.setTimeout(600000);
 
         if (config.liveOnly) {
             const response = await test.step(`Open ${config.href} and check it exists on this environment`, async () => {
@@ -254,6 +260,10 @@ for (const config of PUBLISHING_PAGES) {
         await test.step('Verify the page exposes at least one content card', async () => {
             const cardCount = await page.locator('.card').count();
             expect(cardCount, `${config.href} should expose at least one content card`).toBeGreaterThan(0);
+        });
+
+        await test.step('Verify every link/card on the page navigates correctly', async () => {
+            await verifyPageLinksNavigateCorrectly(page, config.href, { openPage, waitForAndAcceptCookieBanner, expect, test });
         });
 
         await test.step('Verify footer visibility', async () => {

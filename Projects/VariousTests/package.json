@@ -1,0 +1,15 @@
+{
+  "name": "various-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sandbox for one-off, non-client Playwright tests. Specs here are throwaway: create, run, understand, delete, repeat.",
+  "scripts": {
+    "test": "npx playwright test -c .",
+    "test:headed": "npx playwright test -c . --headed",
+    "test:ui": "npx playwright test -c . --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "exceljs": "^4.4.0"
+  }
+}
