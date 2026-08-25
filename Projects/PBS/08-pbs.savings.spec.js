@@ -126,7 +126,12 @@ async function expectSavingsAccountsPageChrome(page) {
     await expect(parentBreadcrumb, 'Savings accounts breadcrumb should include Savings as the previous level').toBeVisible();
 
     const currentBreadcrumb = breadcrumbNav.getByText(/^Compare all savings accounts$/i).first();
-    await expect(currentBreadcrumb, 'Savings accounts breadcrumb should show Compare all savings accounts as the current level').toBeVisible();
+    await expect(currentBreadcrumb, 'Savings accounts breadcrumb should include Compare all savings accounts as the current level').toBeAttached();
+    // On Mobile, the site intentionally hides the current-page crumb via CSS (only the parent
+    // link stays visible, to save space) - so only require full visibility on wider viewports.
+    if (test.info().project.name !== 'mobile-chromium') {
+        await expect(currentBreadcrumb, 'Savings accounts breadcrumb should show Compare all savings accounts as the current level').toBeVisible();
+    }
 }
 
 async function clickFilterLabelInScrollableContainer(page, {

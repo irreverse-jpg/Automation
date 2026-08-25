@@ -116,6 +116,41 @@ async function clickWithCookieGuard(page, locator) {
     }
 }
 
+async function openFiltersIfCollapsed(page) {
+    // On Tablet/Mobile, the filter checkboxes sit inside a collapsed accordion
+    // drawer (height:0, but still display:block) until the "Filters" opener
+    // button is clicked - without this, locators find the labels but they
+    // never become visible/clickable.
+    const filtersOpener = page.locator('#filters-opener');
+    if (await filtersOpener.isVisible().catch(() => false)) {
+        await clickWithCookieGuard(page, filtersOpener);
+    }
+}
+
+async function expectSearchParamsMatch(page, expectedParams, message) {
+    // The site doesn't guarantee a fixed query-param order (e.g. "categories"
+    // can come before or after "media") - compare each param's values as an
+    // unordered set instead of matching one rigid regex.
+    await expect.poll(() => {
+        const url = new URL(page.url());
+        return Object.entries(expectedParams).every(([key, expectedValues]) => {
+            const actual = (url.searchParams.get(key) || '').split(',').filter(Boolean).sort();
+            const expected = [...expectedValues].sort();
+            return actual.length === expected.length && actual.every((v, i) => v === expected[i]);
+        });
+    }, { message, timeout: 10000 }).toBe(true);
+}
+
+async function confirmFilterSelectionIfNeeded(page) {
+    // On Tablet/Mobile, ticking a filter checkbox only stages the selection -
+    // the same shared filters component used on the mortgage/savings pages
+    // requires an explicit "Show results" tap to apply it and update the URL.
+    const showResultsButton = page.locator('#show-results');
+    if (await showResultsButton.isVisible().catch(() => false)) {
+        await clickWithCookieGuard(page, showResultsButton);
+    }
+}
+
 async function getVisibleSearchBox(page) {
     const desktopSearchBox = page.locator('#search-desktop');
     if (await desktopSearchBox.isVisible().catch(() => false)) {
@@ -155,9 +190,9 @@ test('Search - With and Without Results', async ({ page }) => {
         await page.goto('/', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
     });
-    const searchBox = await getVisibleSearchBox(page);
 
     await test.step('Search with a term that returns no results', async () => {
+        const searchBox = await getVisibleSearchBox(page);
         await searchBox.fill('asdasdasd');
         await searchBox.press('Enter');
         await expect(page, 'No-result search should navigate to the expected search results URL').toHaveURL(/search-results\?search=asdasdasd/);
@@ -166,6 +201,11 @@ test('Search - With and Without Results', async ({ page }) => {
     });
 
     await test.step('Search with a term that returns results', async () => {
+        // Re-derive the visible search box rather than reusing the homepage's
+        // reference - on Tablet/Mobile the search input lives inside a
+        // collapsible menu that re-collapses on every fresh page navigation,
+        // so the search-results page needs its own "open menu if needed" pass.
+        const searchBox = await getVisibleSearchBox(page);
         await searchBox.fill('mortgage');
         await searchBox.press('Enter');
         await expect(page, 'Results search should navigate to the expected search results URL').toHaveURL(/search-results\?search=mortgage/);
@@ -204,19 +244,29 @@ test('Search - Filter Results', async ({ page }) => {
     });
 
     await test.step('Toggle the Everyday finance category filter', async () => {
+        await openFiltersIfCollapsed(page);
         const everydayFinanceLabel = page.getByText('Everyday finance').first();
         await clickWithCookieGuard(page, everydayFinanceLabel);
+        await confirmFilterSelectionIfNeeded(page);
         await expect(page, 'Applying Everyday finance should add its category query parameter').toHaveURL(/search-results\?search=savings&categories=everyday-finance-1849/);
+        await openFiltersIfCollapsed(page);
         await clickWithCookieGuard(page, everydayFinanceLabel);
+        await confirmFilterSelectionIfNeeded(page);
         await expect(page, 'Removing Everyday finance should clear its category query parameter').toHaveURL(/search-results\?search=savings/);
     });
 
     await test.step('Apply multiple media and category filters', async () => {
+        await openFiltersIfCollapsed(page);
         await clickWithCookieGuard(page, page.getByLabel('Media type').getByText('Guide', { exact: true }));
         await clickWithCookieGuard(page, page.getByText('News article', { exact: true }));
         await clickWithCookieGuard(page, page.getByText('Saving your deposit', { exact: true }));
         await clickWithCookieGuard(page, page.getByText('ISAs', { exact: true }));
-        await expect(page, 'Applying multiple filters should update the media and categories query parameters').toHaveURL(/search-results\?search=savings&media=guide-article-5616,news-article-5617&categories=isas-1254,saving-your-deposit-1256/);
+        await confirmFilterSelectionIfNeeded(page);
+        await expectSearchParamsMatch(page, {
+            search: ['savings'],
+            media: ['guide-article-5616', 'news-article-5617'],
+            categories: ['isas-1254', 'saving-your-deposit-1256'],
+        }, 'Applying multiple filters should update the media and categories query parameters');
     });
 });
 
@@ -225,15 +275,26 @@ test('Search - Remove Filters Applied One by One', async ({ page }) => {
         await page.goto('/search-results?search=savings&media=guide-article-5616,news-article-5617&categories=isas-1254,saving-your-deposit-1256', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
         await expect(page.getByText(/Oops! Something went wrong/i), 'Filtered search test should not land on the PBS error page before filters are changed').not.toBeVisible();
+        await openFiltersIfCollapsed(page);
         await expect(page.getByLabel('Categories'), 'Filtered search results should expose the Categories filter group before filters are removed').toBeVisible();
     });
 
     await test.step('Remove filters one by one', async () => {
         await clickWithCookieGuard(page, page.getByLabel('Categories').getByText('ISAs', { exact: true }));
+        await confirmFilterSelectionIfNeeded(page);
         await expect(page, 'Removing ISAs should leave only Saving your deposit in the categories query parameter').toHaveURL(/search-results\?search=savings&media=guide-article-5616,news-article-5617&categories=saving-your-deposit-1256/);
+
+        await openFiltersIfCollapsed(page);
         await clickWithCookieGuard(page, page.getByLabel('Categories').getByText('Saving your deposit'));
+        await confirmFilterSelectionIfNeeded(page);
+
+        await openFiltersIfCollapsed(page);
         await clickWithCookieGuard(page, page.getByLabel('Media type').getByText('News article'));
+        await confirmFilterSelectionIfNeeded(page);
+
+        await openFiltersIfCollapsed(page);
         await clickWithCookieGuard(page, page.getByLabel('Media type').getByText('Guide', { exact: true }));
+        await confirmFilterSelectionIfNeeded(page);
         await expect(page, 'Removing all filters one by one should return to the unfiltered savings results URL').toHaveURL(/search-results\?search=savings/);
     });
 });
@@ -243,6 +304,7 @@ test('Search - Remove All Filters Applied at Once', async ({ page }) => {
         await page.goto('/search-results?search=savings&media=guide-article-5616,news-article-5617&categories=isas-1254,saving-your-deposit-1256', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
         await expect(page.getByText(/Oops! Something went wrong/i), 'Clear-all search test should not land on the PBS error page before filters are cleared').not.toBeVisible();
+        await openFiltersIfCollapsed(page);
         await expect(page.getByRole('button', { name: 'Clear all' }), 'Filtered search results should expose a Clear all button before clearing filters').toBeVisible();
     });
 

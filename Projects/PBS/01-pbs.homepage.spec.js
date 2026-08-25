@@ -273,6 +273,13 @@ test('Homepage - Language Switcher', async ({ page, baseURL }) => {
 test('Homepage - Skip Links', async ({ page }) => {
     test.setTimeout(60000);
 
+    // WebKit (Safari's engine, used by the tablet-webkit project) doesn't include plain <a>
+    // links in its default keyboard Tab order - only form controls - matching real desktop/
+    // mobile Safari's default "Full Keyboard Access" setting (off). That's a genuine platform
+    // convention, not a site defect, so Tab-key discovery/verification only works reliably on
+    // the Chromium-based projects; WebKit falls back to a DOM-based discovery + focus() check.
+    const isWebkit = test.info().project.name === 'tablet-webkit';
+
     async function tabToNextLink() {
         await page.keyboard.press('Tab');
         return page.evaluate(() => {
@@ -282,9 +289,21 @@ test('Homepage - Skip Links', async ({ page }) => {
         });
     }
 
-    const skipLinks = await test.step('Discover skip links via keyboard Tab', async () => {
+    async function discoverSkipLinksViaDom() {
+        return page.evaluate(() => {
+            return Array.from(document.querySelectorAll('a[href^="#"]'))
+                .filter((a) => /skip to/i.test((a.textContent || '').trim()))
+                .map((a) => ({ text: (a.textContent || '').trim(), href: a.getAttribute('href') || '' }));
+        });
+    }
+
+    const skipLinks = await test.step('Discover skip links', async () => {
         await page.goto('/', { waitUntil: 'domcontentloaded' });
         await acceptCookiesIfPresent(page);
+
+        if (isWebkit) {
+            return discoverSkipLinksViaDom();
+        }
 
         const links = [];
         const seenHrefs = new Set();
@@ -298,21 +317,28 @@ test('Homepage - Skip Links', async ({ page }) => {
         return links;
     });
 
-    expect(skipLinks.length, 'Homepage should expose at least one "Skip to..." link reachable via keyboard Tab').toBeGreaterThan(0);
+    expect(skipLinks.length, 'Homepage should expose at least one "Skip to..." link').toBeGreaterThan(0);
 
     for (const skipLink of skipLinks) {
         await test.step(`Verify "${skipLink.text}" navigates to its target`, async () => {
             await page.goto('/', { waitUntil: 'domcontentloaded' });
             await acceptCookiesIfPresent(page);
 
-            let matched = false;
-            for (let i = 0; i < 8 && !matched; i++) {
-                const info = await tabToNextLink();
-                if (info && info.href === skipLink.href) matched = true;
+            if (isWebkit) {
+                const link = page.locator(`a[href="${skipLink.href}"]`, { hasText: skipLink.text }).first();
+                await link.focus();
+                await expect(link, `"${skipLink.text}" skip link should be focusable`).toBeFocused();
+                await page.keyboard.press('Enter');
+            } else {
+                let matched = false;
+                for (let i = 0; i < 8 && !matched; i++) {
+                    const info = await tabToNextLink();
+                    if (info && info.href === skipLink.href) matched = true;
+                }
+                expect(matched, `Should be able to Tab back to the "${skipLink.text}" skip link`).toBeTruthy();
+                await page.keyboard.press('Enter');
             }
-            expect(matched, `Should be able to Tab back to the "${skipLink.text}" skip link`).toBeTruthy();
 
-            await page.keyboard.press('Enter');
             await page.waitForTimeout(300);
 
             expect(page.url(), `Activating "${skipLink.text}" should update the URL to include ${skipLink.href}`).toContain(skipLink.href);

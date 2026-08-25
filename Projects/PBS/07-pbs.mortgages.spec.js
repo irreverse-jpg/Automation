@@ -135,7 +135,12 @@ async function expectMortgageProductsPageChrome(page) {
     await expect(parentBreadcrumb, 'Mortgage products breadcrumb should include Mortgages with Principality as the previous level').toBeVisible();
 
     const currentBreadcrumb = breadcrumbNav.getByText(/^Mortgage products$/i).first();
-    await expect(currentBreadcrumb, 'Mortgage products breadcrumb should show Mortgage products as the current level').toBeVisible();
+    await expect(currentBreadcrumb, 'Mortgage products breadcrumb should include Mortgage products as the current level').toBeAttached();
+    // On Mobile, the site intentionally hides the current-page crumb via CSS (only the parent
+    // link stays visible, to save space) - so only require full visibility on wider viewports.
+    if (test.info().project.name !== 'mobile-chromium') {
+        await expect(currentBreadcrumb, 'Mortgage products breadcrumb should show Mortgage products as the current level').toBeVisible();
+    }
 }
 
 async function fillMortgageSearchForm(page, {

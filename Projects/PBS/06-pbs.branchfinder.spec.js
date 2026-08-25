@@ -64,7 +64,12 @@ async function expectBranchFinderPageChrome(page) {
     await expect(contactUsBreadcrumb, 'Branch finder breadcrumb should include Contact us as the previous level').toBeVisible();
 
     const currentBreadcrumb = breadcrumbNav.getByText(/^Branch Finder$/i).first();
-    await expect(currentBreadcrumb, 'Branch finder breadcrumb should show Branch Finder as the current level').toBeVisible();
+    await expect(currentBreadcrumb, 'Branch finder breadcrumb should include Branch Finder as the current level').toBeAttached();
+    // On Mobile, the site intentionally hides the current-page crumb via CSS (only the parent
+    // link stays visible, to save space) - so only require full visibility on wider viewports.
+    if (test.info().project.name !== 'mobile-chromium') {
+        await expect(currentBreadcrumb, 'Branch finder breadcrumb should show Branch Finder as the current level').toBeVisible();
+    }
 }
 
 test('Branch Finder - Initial Page Load Checks', async ({ page }) => {

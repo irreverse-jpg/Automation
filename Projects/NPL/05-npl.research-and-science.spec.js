@@ -294,6 +294,16 @@ for (const subItem of SUB_ITEMS) {
             if (!navigated) {
                 await page.goto(targetHref, { waitUntil: 'domcontentloaded', timeout: 30000 });
             }
+
+            // Fail fast and specifically here rather than letting the test run out its
+            // 30s budget on the later toHaveURL assertion - when a link genuinely redirects
+            // to the homepage, the accumulated waits above already eat most of that budget,
+            // so without this check the failure surfaces as an unhelpful generic
+            // "Test timeout exceeded" instead of naming the actual defect.
+            if (new URL(page.url()).pathname === '/') {
+                throw new Error(`"${subItem.label}" link redirects to the homepage instead of navigating to a page containing "${subItem.slug}"`);
+            }
+
             await page.waitForLoadState('load', { timeout: 30000 }).catch(() => {});
         });
 

@@ -29,12 +29,16 @@ const FRIENDLY_FILE_NAMES = {
     '04-npl.search.spec.js': 'Site Search',
     '05-npl.research-and-science.spec.js': 'Research and Science',
     '06-npl.products-and-services.spec.js': 'Products and Services',
-    '07-npl.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
+    '07-npl.strategic-programmes.spec.js': 'Strategic Programmes',
+    '08-npl.education-and-learning.spec.js': 'Education and Learning',
+    '09-npl.news-and-events.spec.js': 'News and Events',
+    '10-npl.about-npl.spec.js': 'About NPL',
+    '11-npl.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
 };
 
 const FRIENDLY_PROJECT_NAMES = {
     'desktop-chromium': 'Desktop',
-    'tablet-chromium': 'Tablet',
+    'tablet-webkit': 'Tablet',
     'mobile-chromium': 'Mobile',
 };
 
@@ -90,6 +94,7 @@ class FindingsReporter {
     constructor(options = {}) {
         this.outputDir = options.outputDir || path.join(__dirname, '..');
         this.findings = [];
+        this.allResults = [];
         this.totalTests = 0;
         this.passedTests = 0;
     }
@@ -97,23 +102,45 @@ class FindingsReporter {
     onTestEnd(test, result) {
         this.totalTests += 1;
 
+        const specFile = toFriendlyFileName(test.location.file);
+        const projectName = toFriendlyProjectName(test.parent && test.parent.project ? test.parent.project().name : '');
+
         if (result.status === 'passed' || result.status === 'skipped') {
             if (result.status === 'passed') this.passedTests += 1;
+            this.allResults.push({
+                specFile,
+                testTitle: test.title,
+                seenOn: projectName,
+                status: result.status === 'passed' ? 'Passed' : 'Skipped',
+                url: '—',
+                why: result.status === 'passed' ? 'No issues found.' : 'Not run in this session.',
+            });
             return;
         }
 
-        const specFile = toFriendlyFileName(test.location.file);
-        const projectName = toFriendlyProjectName(test.parent && test.parent.project ? test.parent.project().name : '');
         const context = readFailureContext(result);
         const firstError = (result.errors && result.errors[0]) || {};
+        const seenOn = context?.viewport ? toFriendlyProjectName(context.viewport) : projectName;
+        const environment = context?.environment || 'Not captured';
+        const url = context?.url || 'Not captured (issue happened before the page finished loading)';
+        const why = plainLanguage(firstError.message);
 
         this.findings.push({
             specFile,
             testTitle: test.title,
-            projectName: context?.viewport ? toFriendlyProjectName(context.viewport) : projectName,
-            environment: context?.environment || 'Not captured',
-            url: context?.url || 'Not captured (issue happened before the page finished loading)',
-            why: plainLanguage(firstError.message),
+            projectName: seenOn,
+            environment,
+            url,
+            why,
+        });
+
+        this.allResults.push({
+            specFile,
+            testTitle: test.title,
+            seenOn: `${seenOn} - ${environment}`,
+            status: 'Failed',
+            url,
+            why,
         });
     }
 
@@ -141,6 +168,7 @@ class FindingsReporter {
 
         this.addSummarySheet(workbook, timestamp);
         this.addFindingsSheet(workbook);
+        this.addAllTestsSheet(workbook);
 
         return workbook;
     }
@@ -169,6 +197,7 @@ class FindingsReporter {
         } else {
             sheet.addRow(['See the "Findings" sheet for full details on each issue.']);
         }
+        sheet.addRow(['See the "All Tests" sheet for the complete list of every check run, passed or failed.']);
     }
 
     addFindingsSheet(workbook) {
@@ -208,6 +237,54 @@ class FindingsReporter {
         }
 
         sheet.autoFilter = { from: 'A1', to: 'E1' };
+    }
+
+    addAllTestsSheet(workbook) {
+        const sheet = workbook.addWorksheet('All Tests', { views: [{ state: 'frozen', ySplit: 1 }] });
+
+        sheet.columns = [
+            { header: 'Which page/feature', key: 'specFile', width: 28 },
+            { header: 'Test', key: 'testTitle', width: 40 },
+            { header: 'Result', key: 'status', width: 12 },
+            { header: 'Where (page address)', key: 'url', width: 55 },
+            { header: 'Seen on', key: 'seenOn', width: 22 },
+            { header: 'Notes', key: 'why', width: 70 },
+        ];
+
+        const headerRow = sheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF041E42' } };
+            cell.alignment = { vertical: 'middle' };
+        });
+
+        const STATUS_COLORS = {
+            Passed: 'FF1E5E34',
+            Failed: 'FFB00020',
+            Skipped: 'FF8A6D00',
+        };
+
+        for (const item of this.allResults) {
+            const row = sheet.addRow({
+                specFile: item.specFile,
+                testTitle: item.testTitle,
+                status: item.status,
+                url: item.url,
+                seenOn: item.seenOn,
+                why: item.why,
+            });
+
+            row.alignment = { vertical: 'top', wrapText: true };
+            row.getCell('status').font = { bold: true, color: { argb: STATUS_COLORS[item.status] || 'FF000000' } };
+
+            const urlCell = row.getCell('url');
+            if (/^https?:\/\//i.test(item.url)) {
+                urlCell.value = { text: item.url, hyperlink: item.url };
+                urlCell.font = { color: { argb: 'FF0A5CD6' }, underline: true };
+            }
+        }
+
+        sheet.autoFilter = { from: 'A1', to: 'F1' };
     }
 }
 
