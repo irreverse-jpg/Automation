@@ -1,4 +1,4 @@
 {
   "careers-recruitment-enquiries": 3,
-  "contact-us": 7
+  "contact-us": 10
 }

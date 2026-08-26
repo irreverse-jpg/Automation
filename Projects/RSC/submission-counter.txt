@@ -1,10 +1,10 @@
 {
-  "membership-contact-team": 10,
-  "publishing-library-burlington-house": 9,
-  "publishing-librarians-ejournals": 16,
-  "publishing-librarians-sales": 14,
-  "publishing-librarians-technical-support": 14,
-  "aboutus-fundraising-team": 4,
-  "aboutus-recruitment-team": 4,
-  "contactus-advertising-team": 4
+  "membership-contact-team": 13,
+  "publishing-library-burlington-house": 12,
+  "publishing-librarians-ejournals": 19,
+  "publishing-librarians-sales": 17,
+  "publishing-librarians-technical-support": 17,
+  "aboutus-fundraising-team": 7,
+  "aboutus-recruitment-team": 7,
+  "contactus-advertising-team": 7
 }

@@ -25,6 +25,10 @@
             "path": "NPL"
         },
         {
+            "name": "TFS",
+            "path": "TFS"
+        },
+        {
             "name": "VariousTests",
             "path": "VariousTests"
         },
