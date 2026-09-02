@@ -39,27 +39,27 @@ Replace BASE_URL if needed.
 
 From the Projects folder (cd .../Projects):
 - Smoke:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=smoke NPL/12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=smoke NPL/13-npl.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=load NPL/12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=load NPL/13-npl.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=spike NPL/12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=spike NPL/13-npl.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=soak NPL/12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=soak NPL/13-npl.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk NPL/12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk NPL/13-npl.load.k6.js
 
 From the NPL folder (cd .../Projects/NPL):
 - Smoke:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=smoke 12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=smoke 13-npl.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=load 12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=load 13-npl.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=spike 12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=spike 13-npl.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=soak 12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk --env SCENARIO=soak 13-npl.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk 12-npl.load.k6.js
+    k6 run --env BASE_URL=https://npl-uat-kx13.hosted.positive.co.uk 13-npl.load.k6.js
 
 What pages this script exercises
 --------------------------------

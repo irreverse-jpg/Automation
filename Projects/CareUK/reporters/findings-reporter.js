@@ -37,7 +37,8 @@ const FRIENDLY_FILE_NAMES = {
     '12-careuk.whoweare.spec.js': "Who We Are",
     '13-careuk.helpandadvice.spec.js': "Help & Advice",
     '14-careuk.news.spec.js': "Care UK News",
-    '16-careuk.nonfunctional.spec.js': "Technical Health (SEO/Security/Accessibility)",
+    '15-careuk.envcompare.spec.js': "Environment Comparison",
+    '17-careuk.nonfunctional.spec.js': "Technical Health (SEO/Security/Accessibility)",
 };
 
 const FRIENDLY_PROJECT_NAMES = {

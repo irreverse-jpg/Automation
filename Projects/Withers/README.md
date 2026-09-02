@@ -16,8 +16,9 @@ QA automation for Withers Worldwide (withersworldwide.com), built to match the M
 - `10-withers.insight.spec.js` — Insight
 - `11-withers.about.spec.js` — About
 - `12-withers.careers.spec.js` — Careers
-- `13-withers.nonfunctional.spec.js` — SEO / security / accessibility
-- `14-withers.load.k6.js` — k6 load test scaffold
+- `13-withers.envcompare.spec.js` — Environment comparison (two-environment discrepancy checks; only runs when `WITHERS_COMPARE_BASE_URL` is set — see [Comparing two environments](#comparing-two-environments) below)
+- `14-withers.nonfunctional.spec.js` — SEO / security / accessibility
+- `15-withers.load.k6.js` — k6 load test scaffold
 
 Every spec file's own header comment (a "Coverage notes" box right below the imports) lists its exact test list and any confirmed defects/environment differences — read that first before changing a file.
 
@@ -30,6 +31,22 @@ Every spec file's own header comment (a "Coverage notes" box right below the imp
 - Run UI mode: `npm run test:ui`
 - Run non-functional file only: `npm run test:nonfunctional`
 - Run k6 smoke profile: `npm run load:smoke`
+
+## Comparing two environments
+
+`13-withers.envcompare.spec.js` is different from every other spec in this project: it doesn't test one environment, it **diffs two of them** — page titles sitewide, meganav/footer/header-banner structure and order, HTTP response headers, robots.txt/sitemap health, the GTM/analytics container ID, and SEO metadata (og:image, JSON-LD).
+
+It's opt-in and skips itself cleanly on a normal run: it only executes when `WITHERS_COMPARE_BASE_URL` is set, alongside the usual `WITHERS_BASE_URL` for the first environment. `npm test` / CI runs never need to set this, so this file always shows as skipped there — that's expected, not a problem.
+
+PowerShell example (compares UAT against Live):
+
+```powershell
+$env:WITHERS_BASE_URL = 'https://w-uat.hosted.positive.co.uk/en-gb'
+$env:WITHERS_COMPARE_BASE_URL = 'https://www.withersworldwide.com/en-gb'
+npm run test:envcompare
+```
+
+Findings are written into the same `findings-report.xlsx` as any other run, with the "Where" column showing which of the two environments the specific issue was seen on.
 
 ## Environment
 

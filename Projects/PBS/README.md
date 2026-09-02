@@ -16,8 +16,9 @@ QA automation for Principality Building Society (principality.co.uk), built to m
 - `10-pbs.savingsguidesandsupport.spec.js` — Savings: home, guides, ISA transfer, and individual account types (10 pages)
 - `11-pbs.helpandsupport.spec.js` — Help and support (10 FAQ-heavy pages)
 - `12-pbs.aboutus.spec.js` — About us, careers, and our impact (10 pages)
-- `13-pbs.nonfunctional.spec.js` — SEO / security / accessibility
-- `14-pbs.load.k6.js` — k6 load test scaffold
+- `13-pbs.envcompare.spec.js` — Environment comparison (two-environment discrepancy checks; only runs when `PBS_COMPARE_BASE_URL` is set — see [Comparing two environments](#comparing-two-environments) below)
+- `14-pbs.nonfunctional.spec.js` — SEO / security / accessibility
+- `15-pbs.load.k6.js` — k6 load test scaffold
 
 Every spec file's own header comment (a "Coverage notes" box right below the imports) lists its exact test list and any confirmed defects/environment differences — read that first before changing a file.
 
@@ -31,13 +32,33 @@ Every spec file's own header comment (a "Coverage notes" box right below the imp
 - Run non-functional file only: `npm run test:nonfunctional`
 - Run k6 smoke profile: `npm run load:smoke -- --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk`
 
+## Comparing two environments
+
+`13-pbs.envcompare.spec.js` is different from every other spec in this project: it doesn't test one environment, it **diffs two of them** — page titles sitewide, meganav/footer/header link structure and order, HTTP response headers, cookies, robots.txt/sitemap health, the GTM/analytics container ID, and SEO metadata (og:image, JSON-LD).
+
+It's opt-in and skips itself cleanly on a normal run: it only executes when `PBS_COMPARE_BASE_URL` is set, alongside the usual `PBS_BASE_URL` for the first environment. `npm test` / CI runs never need to set this, so this file always shows as skipped there — that's expected, not a problem.
+
+PowerShell example (compares QA2 against Live):
+
+```powershell
+$env:PBS_BASE_URL = 'https://pbs-qa2.hosted.positive.co.uk'
+$env:PBS_COMPARE_BASE_URL = 'https://www.principality.co.uk'
+npm run test:envcompare
+```
+
+Findings are written into the same `findings-report.xlsx` as any other run, with the "Where" column showing which of the two environments the specific issue was seen on.
+
 ## Environment
 
-The default environment is set directly in [playwright.config.js](playwright.config.js)'s `baseURL` value - there's no environment variable override in this project (unlike MCC/Withers/CareUK), so switching environments means editing that value directly.
+The default environment is controlled from [playwright.config.js](playwright.config.js) via `DEFAULT_BASE_URL`.
 
 Current default:
 
 - `https://pbs-qa2.hosted.positive.co.uk/`
+
+When you want the project to point somewhere else by default, change that one value in [playwright.config.js](playwright.config.js).
+
+For one-off terminal runs, `PBS_BASE_URL` still overrides the config default.
 
 Other known environments (see the comment above `baseURL` in [playwright.config.js](playwright.config.js)):
 

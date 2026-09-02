@@ -38,6 +38,7 @@ module.exports = defineConfig({
         Change DEFAULT_BASE_URL below when you want to switch the main CareUK environment.
         Examples:
         - UAT2: https://uat2.careuk.com
+        - XbyK: https://careuk-xbyk-qa.hosted.positive.co.uk/
         - Live: https://www.careuk.com
 
         CAREUK_BASE_URL still overrides this value when you need a one-off run from the terminal.

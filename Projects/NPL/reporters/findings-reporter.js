@@ -33,7 +33,8 @@ const FRIENDLY_FILE_NAMES = {
     '08-npl.education-and-learning.spec.js': 'Education and Learning',
     '09-npl.news-and-events.spec.js': 'News and Events',
     '10-npl.about-npl.spec.js': 'About NPL',
-    '11-npl.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
+    '11-npl.envcompare.spec.js': 'Environment Comparison',
+    '12-npl.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
 };
 
 const FRIENDLY_PROJECT_NAMES = {

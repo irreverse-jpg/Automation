@@ -38,27 +38,27 @@ Replace BASE_URL if needed, example for QA2.
 
 From the Projects folder (cd .../Projects):
 - Smoke:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=smoke PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=smoke PBS/15-pbs.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=load PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=load PBS/15-pbs.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=spike PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=spike PBS/15-pbs.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=soak PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=soak PBS/15-pbs.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk PBS/14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk PBS/15-pbs.load.k6.js
 
 From the PBS folder (cd .../Projects/PBS):
 - Smoke:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=smoke 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=smoke 15-pbs.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=load 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=load 15-pbs.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=spike 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=spike 15-pbs.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=soak 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk --env SCENARIO=soak 15-pbs.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk 14-pbs.load.k6.js
+    k6 run --env BASE_URL=https://pbs-qa2.hosted.positive.co.uk 15-pbs.load.k6.js
 
 How to read results fast
 ------------------------

@@ -39,27 +39,27 @@ Replace BASE_URL if needed, example for UAT2.
 
 From the Projects folder (cd .../Projects):
 - Smoke:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=smoke MCC/14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=smoke MCC/15-mcc.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=load MCC/14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=load MCC/15-mcc.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=spike MCC/14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=spike MCC/15-mcc.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=soak MCC/14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=soak MCC/15-mcc.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk MCC/14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk MCC/15-mcc.load.k6.js
 
 From the MCC folder (cd .../Projects/MCC):
 - Smoke:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=smoke 14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=smoke 15-mcc.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=load 14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=load 15-mcc.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=spike 14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=spike 15-mcc.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=soak 14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk --env SCENARIO=soak 15-mcc.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk 14-mcc.load.k6.js
+    k6 run --env BASE_URL=https://lords-uat2.hosted.positive.co.uk 15-mcc.load.k6.js
 
 What pages this script exercises
 --------------------------------

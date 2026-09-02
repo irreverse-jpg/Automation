@@ -39,27 +39,27 @@ Replace BASE_URL if needed, example for Live.
 
 From the Projects folder (cd .../Projects):
 - Smoke:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke RSC/16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke RSC/17-rsc.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load RSC/16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load RSC/17-rsc.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike RSC/16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike RSC/17-rsc.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak RSC/16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak RSC/17-rsc.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com RSC/16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com RSC/17-rsc.load.k6.js
 
 From the RSC folder (cd .../Projects/RSC):
 - Smoke:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke 16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=smoke 17-rsc.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load 16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=load 17-rsc.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike 16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=spike 17-rsc.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak 16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com --env SCENARIO=soak 17-rsc.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com 16-rsc.load.k6.js
+    k6 run --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com 17-rsc.load.k6.js
 
 What pages this script exercises
 --------------------------------

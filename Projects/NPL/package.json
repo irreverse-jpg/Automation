@@ -7,12 +7,13 @@
         "test": "npx playwright test -c .",
         "test:headed": "npx playwright test -c . --headed",
         "test:ui": "npx playwright test -c . --ui",
-        "test:nonfunctional": "npx playwright test -c . 11-npl.nonfunctional.spec.js",
-        "load:smoke": "k6 run --env SCENARIO=smoke 12-npl.load.k6.js",
-        "load:load": "k6 run --env SCENARIO=load 12-npl.load.k6.js",
-        "load:spike": "k6 run --env SCENARIO=spike 12-npl.load.k6.js",
-        "load:soak": "k6 run --env SCENARIO=soak 12-npl.load.k6.js",
-        "load:all": "k6 run 12-npl.load.k6.js"
+        "test:nonfunctional": "npx playwright test -c . 12-npl.nonfunctional.spec.js",
+        "test:envcompare": "npx playwright test -c . 11-npl.envcompare.spec.js",
+        "load:smoke": "k6 run --env SCENARIO=smoke 13-npl.load.k6.js",
+        "load:load": "k6 run --env SCENARIO=load 13-npl.load.k6.js",
+        "load:spike": "k6 run --env SCENARIO=spike 13-npl.load.k6.js",
+        "load:soak": "k6 run --env SCENARIO=soak 13-npl.load.k6.js",
+        "load:all": "k6 run 13-npl.load.k6.js"
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.11.2",

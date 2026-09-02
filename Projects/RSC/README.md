@@ -4,11 +4,23 @@ QA automation for the Royal Society of Chemistry (rsc.org), built to match the C
 
 ## What's covered
 
-- `01-rsc.homepage.spec.js` — Homepage and main navigation
-- `09-rsc.nonfunctional.spec.js` — SEO / security / accessibility
-- `10-rsc.load.k6.js` — k6 load test scaffold
-
-Spec numbers 02-08 are reserved for section/feature specs (Membership, Publishing, Policy and campaigning, Standards and recognition, Funding and support, Events and venue hire, News, etc.) as they're built out.
+- `01-rsc.homepage.spec.js` — Homepage
+- `02-rsc.meganav.spec.js` — Main menu (meganav)
+- `03-rsc.footer.spec.js` — Footer
+- `04-rsc.search.spec.js` — Site search
+- `05-rsc-membership.spec.js` — Membership
+- `06-rsc.publishing.spec.js` — Publishing
+- `07-rsc.policyandcampaigning.spec.js` — Policy and campaigning
+- `08-rsc.standardsandrecognition.spec.js` — Standards and recognition
+- `09-rsc.fundingandsupport.spec.js` — Funding and support
+- `10-rsc.eventsandvenuehire.spec.js` — Events and venue hire
+- `11-rsc.news.spec.js` — News
+- `12-rsc.aboutus.spec.js` — About us
+- `13-rsc.contactus.spec.js` — Contact us
+- `14-rsc.helpandlegal.spec.js` — Help and legal
+- `15-rsc.envcompare.spec.js` — Environment comparison (two-environment discrepancy checks; only runs when `RSC_COMPARE_BASE_URL` is set — see [Comparing two environments](#comparing-two-environments) below)
+- `16-rsc.nonfunctional.spec.js` — SEO / security / accessibility
+- `17-rsc.load.k6.js` — k6 load test scaffold
 
 Every spec file's own header comment (a "Coverage notes" box right below the imports) lists its exact test list and any confirmed defects/environment differences — read that first before changing a file.
 
@@ -21,6 +33,22 @@ Every spec file's own header comment (a "Coverage notes" box right below the imp
 - Run UI mode: `npm run test:ui`
 - Run non-functional file only: `npm run test:nonfunctional`
 - Run k6 smoke profile: `npm run load:smoke -- --env BASE_URL=https://qa-rsccorp-fa30c0.xperience-sites.com`
+
+## Comparing two environments
+
+`15-rsc.envcompare.spec.js` is different from every other spec in this project: it doesn't test one environment, it **diffs two of them** — page titles sitewide, meganav/footer/header-utility-link structure and order, HTTP response headers, cookies, robots.txt/sitemap health, the GTM/analytics container ID, and SEO metadata (og:image, JSON-LD).
+
+It's opt-in and skips itself cleanly on a normal run: it only executes when `RSC_COMPARE_BASE_URL` is set, alongside the usual `RSC_BASE_URL` for the first environment. `npm test` / CI runs never need to set this, so this file always shows as skipped there — that's expected, not a problem.
+
+PowerShell example (compares QA against Live):
+
+```powershell
+$env:RSC_BASE_URL = 'https://qa-rsccorp-fa30c0.xperience-sites.com'
+$env:RSC_COMPARE_BASE_URL = 'https://www.rsc.org'
+npm run test:envcompare
+```
+
+Findings are written into the same `findings-report.xlsx` as any other run, with the "Where" column showing which of the two environments the specific issue was seen on. Note (confirmed 2026-09-02): Live currently serves an automated "Are you human?" bot-verification wall to both plain HTTP requests and headless browsers, so a real run against Live will likely show near-total failures until that's resolved on Live's end — see the spec file's own "Coverage notes" header for details, that's a known infrastructure caveat rather than a bug in this spec.
 
 ## Environment
 

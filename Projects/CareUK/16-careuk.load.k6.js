@@ -39,27 +39,27 @@ Replace BASE_URL if needed, example for UAT2.
 
 From the Projects folder (cd .../Projects):
 - Smoke:
-    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=smoke CareUK/15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=smoke CareUK/16-careuk.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=load CareUK/15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=load CareUK/16-careuk.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=spike CareUK/15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=spike CareUK/16-careuk.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=soak CareUK/15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=soak CareUK/16-careuk.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://uat2.careuk.com CareUK/15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com CareUK/16-careuk.load.k6.js
 
 From the CareUK folder (cd .../Projects/CareUK):
 - Smoke:
-    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=smoke 15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=smoke 16-careuk.load.k6.js
 - Load:
-    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=load 15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=load 16-careuk.load.k6.js
 - Spike:
-    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=spike 15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=spike 16-careuk.load.k6.js
 - Soak:
-    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=soak 15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com --env SCENARIO=soak 16-careuk.load.k6.js
 - All scenarios:
-    k6 run --env BASE_URL=https://uat2.careuk.com 15-careuk.load.k6.js
+    k6 run --env BASE_URL=https://uat2.careuk.com 16-careuk.load.k6.js
 
 What pages this script exercises
 --------------------------------

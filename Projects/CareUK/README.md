@@ -18,8 +18,9 @@ QA automation for Care UK (careuk.com), built to match the MCC/Withers/PBS Playw
 - `12-careuk.whoweare.spec.js` — Who We Are
 - `13-careuk.helpandadvice.spec.js` — Help & Advice
 - `14-careuk.news.spec.js` — Care UK News
-- `16-careuk.nonfunctional.spec.js` — SEO / security / accessibility
-- `15-careuk.load.k6.js` — k6 load test scaffold
+- `15-careuk.envcompare.spec.js` — Environment comparison (two-environment discrepancy checks; only runs when `CAREUK_COMPARE_BASE_URL` is set — see [Comparing two environments](#comparing-two-environments) below)
+- `17-careuk.nonfunctional.spec.js` — SEO / security / accessibility
+- `16-careuk.load.k6.js` — k6 load test scaffold
 
 Every spec file's own header comment (a "Coverage notes" box right below the imports) lists its exact test list and any confirmed defects/environment differences — read that first before changing a file.
 
@@ -32,6 +33,22 @@ Every spec file's own header comment (a "Coverage notes" box right below the imp
 - Run UI mode: `npm run test:ui`
 - Run non-functional file only: `npm run test:nonfunctional`
 - Run k6 smoke profile: `npm run load:smoke -- --env BASE_URL=https://www.careuk.com`
+
+## Comparing two environments
+
+`15-careuk.envcompare.spec.js` is different from every other spec in this project: it doesn't test one environment, it **diffs two of them** — page titles sitewide, meganav/footer/utility-bar structure and order, the homepage carousel, HTTP response headers, cookies, robots.txt/sitemap health, the GTM/analytics container ID, and SEO metadata (og:image, JSON-LD).
+
+It's opt-in and skips itself cleanly on a normal run: it only executes when `CAREUK_COMPARE_BASE_URL` is set, alongside the usual `CAREUK_BASE_URL` for the first environment. `npm test` / CI runs never need to set this, so this file always shows as skipped there — that's expected, not a problem.
+
+PowerShell example (compares XbyK against Live):
+
+```powershell
+$env:CAREUK_BASE_URL = 'https://careuk-xbyk-qa.hosted.positive.co.uk'
+$env:CAREUK_COMPARE_BASE_URL = 'https://www.careuk.com'
+npm run test:envcompare
+```
+
+Findings are written into the same `findings-report.xlsx` as any other run, with the "Where" column showing which of the two environments the specific issue was seen on. This file grew out of a manual environment-comparison pass done directly in conversation with Claude (XbyK vs Live, 2026-08/09) — see `findings-reports/` archives from that period and the published comparison report artifacts for the original write-up this spec automates.
 
 ## Environment
 

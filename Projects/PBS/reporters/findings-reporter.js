@@ -35,7 +35,8 @@ const FRIENDLY_FILE_NAMES = {
     '10-pbs.savingsguidesandsupport.spec.js': "Savings (Guides & Account Types)",
     '11-pbs.helpandsupport.spec.js': "Help and Support",
     '12-pbs.aboutus.spec.js': "About Us",
-    '13-pbs.nonfunctional.spec.js': "Technical Health (SEO/Security/Accessibility)",
+    '13-pbs.envcompare.spec.js': "Environment Comparison",
+    '14-pbs.nonfunctional.spec.js': "Technical Health (SEO/Security/Accessibility)",
 };
 
 const FRIENDLY_PROJECT_NAMES = {

@@ -24,7 +24,8 @@ const ExcelJS = require('exceljs');
 
 const FRIENDLY_FILE_NAMES = {
     '01-rsc.homepage.spec.js': 'Homepage',
-    '09-rsc.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
+    '15-rsc.envcompare.spec.js': 'Environment Comparison',
+    '16-rsc.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
 };
 
 const FRIENDLY_PROJECT_NAMES = {

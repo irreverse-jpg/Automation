@@ -23,7 +23,11 @@ const path = require('path');
 const ExcelJS = require('exceljs');
 
 // Update as spec files are added.
-const FRIENDLY_FILE_NAMES = {};
+const FRIENDLY_FILE_NAMES = {
+    '01-tfs.login.spec.js': 'Login',
+    '02-tfs.dashboard.spec.js': 'Dashboard',
+    '03-tfs.accountdetails.spec.js': 'Account Details',
+};
 
 const FRIENDLY_PROJECT_NAMES = {
     'desktop-chromium': 'Desktop',

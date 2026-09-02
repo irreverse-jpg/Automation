@@ -1,5 +1,7 @@
 const { defineConfig, devices } = require('@playwright/test');
 
+const DEFAULT_BASE_URL = 'https://pbs-qa2.hosted.positive.co.uk/';
+
 module.exports = defineConfig({
     testDir: './',
     fullyParallel: true,
@@ -30,13 +32,16 @@ module.exports = defineConfig({
         navigationTimeout: 30000,
         storageState: undefined,
         /*
-        Change the baseURL manually to run the desired environment.
-        For QA: https://pbs-qa.hosted.positive.co.uk/
-        For QA2: https://pbs-qa2.hosted.positive.co.uk/
-        For UAT2: https://pbs-uat2.hosted.positive.co.uk/
-        For Live: https://www.principality.co.uk/
+        Change DEFAULT_BASE_URL above when you want to switch the main PBS environment.
+        Examples:
+        - QA: https://pbs-qa.hosted.positive.co.uk/
+        - QA2: https://pbs-qa2.hosted.positive.co.uk/
+        - UAT2: https://pbs-uat2.hosted.positive.co.uk/
+        - Live: https://www.principality.co.uk/
+
+        PBS_BASE_URL still overrides this value when you need a one-off run from the terminal.
         */
-        baseURL: 'https://pbs-qa2.hosted.positive.co.uk/',
+        baseURL: process.env.PBS_BASE_URL || DEFAULT_BASE_URL,
     },
 
 });

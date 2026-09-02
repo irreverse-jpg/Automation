@@ -17,8 +17,9 @@ QA automation for Lord's Cricket Ground / MCC (lords.org), built to match the Ca
 - `11-mcc.more.spec.js` — More menu
 - `12-mcc.sponsors.spec.js` — Sponsors
 - `13-mcc.womensinternationals.spec.js` — Women's Internationals
-- `15-mcc.nonfunctional.spec.js` — SEO / security / accessibility
-- `14-mcc.load.k6.js` — k6 load test scaffold
+- `14-mcc.envcompare.spec.js` — Environment comparison (two-environment discrepancy checks; only runs when `MCC_COMPARE_BASE_URL` is set — see [Comparing two environments](#comparing-two-environments) below)
+- `16-mcc.nonfunctional.spec.js` — SEO / security / accessibility
+- `15-mcc.load.k6.js` — k6 load test scaffold
 
 Every spec file's own header comment (a "Coverage notes" box right below the imports) lists its exact test list and any confirmed defects/environment differences — read that first before changing a file.
 
@@ -31,6 +32,22 @@ Every spec file's own header comment (a "Coverage notes" box right below the imp
 - Run UI mode: `npm run test:ui`
 - Run non-functional file only: `npm run test:nonfunctional`
 - Run k6 smoke profile: `npm run load:smoke -- --env BASE_URL=https://lords-uat2.hosted.positive.co.uk`
+
+## Comparing two environments
+
+`14-mcc.envcompare.spec.js` is different from every other spec in this project: it doesn't test one environment, it **diffs two of them** — page titles sitewide, meganav/footer/eyebrow-nav structure and order, the homepage hero carousel, HTTP response headers, robots.txt/sitemap health, the GTM/analytics container ID, and SEO metadata (og:image, JSON-LD).
+
+It's opt-in and skips itself cleanly on a normal run: it only executes when `MCC_COMPARE_BASE_URL` is set, alongside the usual `MCC_BASE_URL` for the first environment. `npm test` / CI runs never need to set this, so this file always shows as skipped there — that's expected, not a problem.
+
+PowerShell example (compares UAT2 against Live):
+
+```powershell
+$env:MCC_BASE_URL = 'https://lords-uat2.hosted.positive.co.uk'
+$env:MCC_COMPARE_BASE_URL = 'https://www.lords.org'
+npm run test:envcompare
+```
+
+Findings are written into the same `findings-report.xlsx` as any other run, with the "Where" column showing which of the two environments the specific issue was seen on. This file grew out of a manual UAT2-vs-Live comparison pass done directly in conversation with Claude (2026-09) — see the project's memory notes for the original write-up this spec automates.
 
 ## Environment
 

@@ -36,7 +36,8 @@ const FRIENDLY_FILE_NAMES = {
     '11-mcc.more.spec.js': 'More Menu',
     '12-mcc.sponsors.spec.js': 'Sponsors',
     '13-mcc.womensinternationals.spec.js': "Women's Internationals",
-    '15-mcc.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
+    '14-mcc.envcompare.spec.js': 'Environment Comparison',
+    '16-mcc.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
 };
 
 const FRIENDLY_PROJECT_NAMES = {

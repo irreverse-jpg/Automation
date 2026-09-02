@@ -21,8 +21,8 @@ jobs:
         run: npx playwright install --with-deps
       - name: Run Playwright tests
         env:
-          TFS_QA_EMAIL: ${{ secrets.TFS_QA_EMAIL }}
-          TFS_QA_PASSWORD: ${{ secrets.TFS_QA_PASSWORD }}
+          TFS_EMAIL: ${{ secrets.TFS_EMAIL }}
+          TFS_PASSWORD: ${{ secrets.TFS_PASSWORD }}
         run: npx playwright test
       - name: Upload Playwright HTML report
         if: always()

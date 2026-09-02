@@ -7,6 +7,7 @@
         "test": "npx playwright test -c .",
         "test:headed": "npx playwright test -c . --headed",
         "test:ui": "npx playwright test -c . --ui",
+        "test:stable": "npx playwright test -c . --workers=1",
         "load:smoke": "k6 run --env SCENARIO=smoke 10-tfs.load.k6.js",
         "load:load": "k6 run --env SCENARIO=load 10-tfs.load.k6.js",
         "load:spike": "k6 run --env SCENARIO=spike 10-tfs.load.k6.js",

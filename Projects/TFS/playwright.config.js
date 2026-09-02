@@ -11,9 +11,10 @@ module.exports = defineConfig({
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? 1 : undefined,
-    // TFS is login-gated (QA redirects "/" straight to "/login") - globalSetup logs in once via
-    // the real UI and every project below reuses that session through storageState. See
-    // global-setup.js for details.
+    // TFS is login-gated on both environments (QA redirects "/" straight to "/login"; Live's
+    // public site sits at the root with the portal - and its login - under /portal) -
+    // globalSetup logs in once via the real UI and every project below reuses that session
+    // through storageState. See global-setup.js for details.
     globalSetup: require.resolve('./global-setup.js'),
     reporter: [
         ['html'],
@@ -48,9 +49,9 @@ module.exports = defineConfig({
         - Live: https://www.thefuelstore.co.uk/
 
         TFS_BASE_URL still overrides this value when you need a one-off run from the terminal.
-        Note: Live is the public marketing site and is NOT login-gated the way QA is - the
-        storageState above is only meaningful when pointed at an environment with the same
-        login-gated portal (QA and any future staging/UAT environment of the portal itself).
+        Note: on Live, the portal (and its /portal/login) is a subsection of the public
+        marketing site at the same domain - point TFS_BASE_URL at the domain root either way,
+        globalSetup resolves the correct login path per environment (see global-setup.js).
         */
         baseURL: process.env.TFS_BASE_URL || DEFAULT_BASE_URL,
     },

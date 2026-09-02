@@ -35,7 +35,8 @@ const FRIENDLY_FILE_NAMES = {
     '10-withers.insight.spec.js': "Insight",
     '11-withers.about.spec.js': "About",
     '12-withers.careers.spec.js': "Careers",
-    '13-withers.nonfunctional.spec.js': "Technical Health (SEO/Security/Accessibility)",
+    '13-withers.envcompare.spec.js': "Environment Comparison",
+    '14-withers.nonfunctional.spec.js': "Technical Health (SEO/Security/Accessibility)",
 };
 
 const FRIENDLY_PROJECT_NAMES = {
