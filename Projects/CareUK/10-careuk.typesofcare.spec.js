@@ -996,7 +996,7 @@ test('Types of Care - Day Clubs Traversal', async ({ page, baseURL }) => {
         expect(concreteOptions.length, 'Nearest care home type dropdown should expose only one concrete option').toBe(1);
         expect(concreteOptions[0], 'Nearest care home type dropdown concrete option should be Day club').toMatch(/day\s*club/i);
 
-        await careTypeSelect.selectOption({ label: /day\s*club/i }).catch(async () => {
+        await careTypeSelect.selectOption({ label: 'Day club' }).catch(async () => {
             const value = await careTypeSelect.locator('option').filter({ hasText: /day\s*club/i }).first().getAttribute('value');
             if (value) {
                 await careTypeSelect.selectOption(value);

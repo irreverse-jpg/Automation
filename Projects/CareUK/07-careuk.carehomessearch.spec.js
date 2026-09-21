@@ -345,7 +345,7 @@ test('Care Homes Search - Postcode and Care Type Filtering Logic', async ({ page
 
     await searchInput.fill('M33');
     await careTypeSelect.selectOption({ value: 'residential-care' }).catch(async () => {
-        await careTypeSelect.selectOption({ label: /residential care/i });
+        await careTypeSelect.selectOption({ label: 'Residential care' });
     });
 
     await clickWithCookieGuard(page, submitButton);
@@ -374,7 +374,7 @@ test('Care Homes Search - Map Pins Match Listing Names', async ({ page }) => {
 
     await searchInput.fill('M33');
     await careTypeSelect.selectOption({ value: 'residential-care' }).catch(async () => {
-        await careTypeSelect.selectOption({ label: /residential care/i });
+        await careTypeSelect.selectOption({ label: 'Residential care' });
     });
     await clickWithCookieGuard(page, submitButton);
     await page.waitForTimeout(2500);

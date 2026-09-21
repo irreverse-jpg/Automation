@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { DASHBOARD_PATH } = require('./login-helpers');
 const { HEADER_SELECTORS, SIDEBAR_SELECTORS, navigateViaSidebar, isBeforeInDom } = require('./portal-helpers');
+const TABLE = require('./history-table-helpers');
 
 // Captures the page's web address at the moment a test fails, so the
 // findings report can tell teammates exactly where an issue was seen.
@@ -38,17 +39,22 @@ test.afterEach(async ({ page }, testInfo) => {
 // [[project_tfs]]). No environment or viewport branching needed anywhere in this file.
 //
 // This page is a template for every other menu page (Invoices, Transactions, Payments, ...) -
-// same header/sidebar chrome, same personal-details card, same Filter Results panel shape, same
-// History table with sort/export/pagination. Shared header/sidebar selectors and the
-// navigateViaSidebar() helper now live in portal-helpers.js specifically so future page specs
-// can reuse them instead of re-discovering this chrome each time.
+// same header/sidebar chrome, same Filter Results panel shape, same History table with
+// sort/export/pagination (confirmed 2026-09-03 to be the exact same widget on Invoices too -
+// same columns, same data). Shared header/sidebar selectors live in portal-helpers.js, and the
+// History table/filter mechanics (sort, pagination, date-picker, column reading, currency/date
+// parsing) live in history-table-helpers.js (imported here as `TABLE`) - both extracted
+// specifically so future page specs (04-tfs.invoices.spec.js onward) reuse them instead of
+// re-discovering this chrome/table each time. Only this page's OWN bits stay local: the
+// personal-details card and its 4 extra filter fields (Quantity/Total ranges) that Invoices
+// doesn't have.
 //
 // The Filter results panel's date fields are a real react-datepicker component - typing a date
 // string into the input and pressing Enter/Escape visually shows the typed text but does NOT
 // actually apply the filter; the ONLY way that genuinely applies a date filter is opening the
-// calendar and clicking an actual day cell (see pickCalendarDate() below). Clearing any filter
-// field (date or text) is a plain `fill('')`, confirmed to correctly restore the full unfiltered
-// list.
+// calendar and clicking an actual day cell (see pickCalendarDate() in history-table-helpers.js).
+// Clearing any filter field (date or text) is a plain `fill('')`, confirmed to correctly restore
+// the full unfiltered list.
 //
 // Tests in this file:
 //   1. Account Details - Navigating from the Dashboard Sidebar Loads the Page
@@ -122,32 +128,15 @@ test.afterEach(async ({ page }, testInfo) => {
 
 const ACCOUNT_DETAILS_PATH = '/portal/account-details';
 
+// Page-specific selectors only - shared History table/filter-panel mechanics come from TABLE
+// (history-table-helpers.js).
 const SELECTORS = {
+    ...TABLE.SELECTORS,
     accountName: '.account-info-card__header h2',
     accountAddress: '.account-info-card__address',
     accountNumber: '.account-info-card__number',
     detailRowValue: '.account-info-card__row span:nth-child(2)',
     filterPanel: '.filter-panel',
-    dataTable: '.data-table',
-    sortDropdown: '.data-table__sort-dropdown',
-    sortToggle: '.data-table__sort-dropdown .dropdown__toggle',
-    sortToggleText: '.data-table__sort-dropdown .dropdown__toggle-text',
-    sortChevron: '.data-table__sort-dropdown .dropdown__chevron',
-    sortItem: '.data-table__sort-dropdown .dropdown__item',
-    sortDescendingButton: '.data-table__sort-dropdown button[aria-label="Descending"]',
-    sortAscendingButton: '.data-table__sort-dropdown button[aria-label="Ascending"]',
-    exportButton: '.data-table__export-button',
-    tableRow: '.data-table__tbody .data-table__tr',
-    firstColumnOfRow: '.data-table__td',
-    pagination: '.pagination',
-    paginationInfo: '.pagination__info',
-    paginationPages: '.pagination__pages',
-    paginationDots: '.pagination__dots',
-    firstPageButton: 'button[aria-label="First page"]',
-    prevPageButton: 'button[aria-label="Previous page"]',
-    nextPageButton: 'button[aria-label="Next page"]',
-    lastPageButton: 'button[aria-label="Last page"]',
-    pageButton: (n) => `button[aria-label="Page ${n}"]`,
     documentNoInput: '#filter-ExternalDocumentRef',
     dueDateInput: '#filter-DueDate',
     startDateInput: '#filter-DocumentDate_start',
@@ -156,11 +145,6 @@ const SELECTORS = {
     quantityMaxInput: '#filter-Quantity-max',
     totalMinInput: '#filter-Total-min',
     totalMaxInput: '#filter-Total-max',
-    datepickerMonth: '.datepicker-header__month',
-    datepickerPrevMonth: 'button[aria-label="Previous month"]',
-    datepickerDay: '.react-datepicker__day:not(.react-datepicker__day--outside-month)',
-    pdfDownloadLink: 'a[aria-label="Download Invoice as PDF"]',
-    excelDownloadLink: 'a[aria-label="Download Invoice Transactions as Excel"]',
 };
 
 const FILTER_FIELD_IDS = [
@@ -174,93 +158,13 @@ const FILTER_FIELD_IDS = [
     'filter-Total-max',
 ];
 
-const SORT_FIELDS = ['Document No.', 'Type', 'Due Date', 'Date', 'Transactions', 'Quantity (Ltrs)', 'Total', 'Gross'];
-
-// "Type" and "Quantity (Ltrs)" are confirmed 2026-09-02 to be the SAME value ("SalesInvoice" and
-// "0" respectively) across every invoice in this account's entire history (checked across
-// several pages) - sorting by either genuinely cannot change the visible row order, so those two
-// only get a "did the interaction complete" check rather than a "did the order change" one.
-const FIELDS_WITH_NO_VISIBLE_REORDER = ['Type', 'Quantity (Ltrs)'];
-
 const AVAILABLE_OR_PLACEHOLDER = /^(—|\S.*\S|\S)$/; // any non-empty value or the "—" placeholder
-
-const COLUMN_INDEX = {
-    documentNo: 0,
-    dueDate: 2,
-    date: 3,
-    total: 6,
-};
-
-const MONTH_NAMES = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
 
 async function gotoAccountDetails(page) {
     await page.goto(DASHBOARD_PATH, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('load').catch(() => { });
     await navigateViaSidebar(page, ACCOUNT_DETAILS_PATH, ACCOUNT_DETAILS_PATH);
     await expect(page.locator('h1'), 'Account Details should show its "Account Details" heading').toHaveText('Account Details');
-}
-
-async function readDocumentNumbers(page) {
-    // Selecting a sort field or flipping direction re-fetches the table - reading immediately
-    // can catch it mid-reload (an empty row set), so wait for rows to actually be present first.
-    await expect(page.locator(SELECTORS.tableRow).first(), 'History table should have rows after a sort/reload').toBeVisible();
-    return page.evaluate((rowSelector) => {
-        return Array.from(document.querySelectorAll(rowSelector)).map((row) => row.querySelector('td')?.textContent?.trim() || '');
-    }, SELECTORS.tableRow);
-}
-
-async function openSortDropdown(page) {
-    const toggle = page.locator(SELECTORS.sortToggle);
-    if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-        await toggle.click();
-    }
-    await expect(toggle, 'Sort dropdown should report itself as open').toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator(SELECTORS.sortChevron), 'Sort chevron should show its "open" state').toHaveClass(/dropdown__chevron--open/);
-}
-
-async function waitForFilterToSettle(page) {
-    // Filter fields re-fetch the table live as you type/pick - give the debounce + request a
-    // moment, then wait for network activity to actually finish before reading results.
-    await page.waitForTimeout(400);
-    await page.waitForLoadState('networkidle').catch(() => { });
-}
-
-async function readColumn(page, columnIndex) {
-    return page.evaluate(({ rowSelector, columnIndex }) => {
-        return Array.from(document.querySelectorAll(rowSelector)).map((row) => row.querySelectorAll('td')[columnIndex]?.textContent.trim() || '');
-    }, { rowSelector: SELECTORS.tableRow, columnIndex });
-}
-
-function parseUkDate(value) {
-    const [day, month, year] = value.split('/').map((part) => Number(part.trim()));
-    return new Date(year, month - 1, day);
-}
-
-function parseCurrency(value) {
-    return Number(value.replace(/[£,]/g, ''));
-}
-
-// The date fields are a real react-datepicker calendar - typing text into the input visually
-// updates it but does NOT apply the filter (confirmed 2026-09-02). Only clicking an actual day
-// cell in the opened calendar genuinely applies it.
-async function pickCalendarDate(page, fieldSelector, day, month, year) {
-    await page.click(fieldSelector);
-    const targetLabel = `${MONTH_NAMES[month - 1]} ${year}`;
-
-    for (let guard = 0; guard < 24; guard++) {
-        const currentLabel = await page.locator(SELECTORS.datepickerMonth).textContent();
-        if (currentLabel.includes(targetLabel)) break;
-        await page.click(SELECTORS.datepickerPrevMonth);
-        await page.waitForTimeout(100);
-    }
-
-    await page.locator(SELECTORS.datepickerDay, { hasText: new RegExp(`^${day}$`) }).click();
-    await waitForFilterToSettle(page);
-}
-
-async function clearFilter(page, fieldSelector) {
-    await page.fill(fieldSelector, '');
-    await waitForFilterToSettle(page);
 }
 
 test('Account Details - Navigating from the Dashboard Sidebar Loads the Page', async ({ page, baseURL }) => {
@@ -325,15 +229,15 @@ test('Account Details - Filter Results Panel Is Present', async ({ page }) => {
 
 test('Filters - Document No. Updates Results Live As You Type', async ({ page }) => {
     await gotoAccountDetails(page);
-    const defaultDocumentNumbers = await readColumn(page, COLUMN_INDEX.documentNo);
+    const defaultDocumentNumbers = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
 
     await test.step('Type a partial document number', async () => {
         await page.fill(SELECTORS.documentNoInput, 'IN101');
-        await waitForFilterToSettle(page);
+        await TABLE.waitForFilterToSettle(page);
     });
 
     await test.step('Every visible result should match what was typed', async () => {
-        const documentNumbers = await readColumn(page, COLUMN_INDEX.documentNo);
+        const documentNumbers = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
         expect(documentNumbers.length, 'Filtering by "IN101" should return at least one result').toBeGreaterThan(0);
         for (const documentNo of documentNumbers) {
             expect(documentNo, `"${documentNo}" should contain the typed "IN101"`).toContain('IN101');
@@ -341,46 +245,46 @@ test('Filters - Document No. Updates Results Live As You Type', async ({ page })
     });
 
     await test.step('Clearing the field restores the full list', async () => {
-        await clearFilter(page, SELECTORS.documentNoInput);
-        const restored = await readColumn(page, COLUMN_INDEX.documentNo);
+        await TABLE.clearFilter(page, SELECTORS.documentNoInput);
+        const restored = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
         expect(restored, 'Clearing Document No. should restore the original unfiltered list').toEqual(defaultDocumentNumbers);
     });
 });
 
 test('Filters - Start Date Shows Results On or After That Date', async ({ page }) => {
     await gotoAccountDetails(page);
-    const defaultDocumentNumbers = await readColumn(page, COLUMN_INDEX.documentNo);
+    const defaultDocumentNumbers = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
     const startDate = new Date(2026, 7, 3); // 03/08/2026
 
     await test.step('Pick a start date', async () => {
-        await pickCalendarDate(page, SELECTORS.startDateInput, 3, 8, 2026);
+        await TABLE.pickCalendarDate(page, SELECTORS.startDateInput, 3, 8, 2026);
     });
 
     await test.step('Every visible result should be dated on or after the start date', async () => {
-        const dates = await readColumn(page, COLUMN_INDEX.date);
+        const dates = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.date);
         expect(dates.length, 'Filtering by start date 03/08/2026 should return at least one result').toBeGreaterThan(0);
         for (const dateText of dates) {
-            expect(parseUkDate(dateText).getTime(), `Row dated "${dateText}" should be on or after 03/08/2026`).toBeGreaterThanOrEqual(startDate.getTime());
+            expect(TABLE.parseUkDate(dateText).getTime(), `Row dated "${dateText}" should be on or after 03/08/2026`).toBeGreaterThanOrEqual(startDate.getTime());
         }
     });
 
     await test.step('Clearing the field restores the full list', async () => {
-        await clearFilter(page, SELECTORS.startDateInput);
-        const restored = await readColumn(page, COLUMN_INDEX.documentNo);
+        await TABLE.clearFilter(page, SELECTORS.startDateInput);
+        const restored = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
         expect(restored, 'Clearing Start Date should restore the original unfiltered list').toEqual(defaultDocumentNumbers);
     });
 });
 
 test('Filters - Due Date Shows Results Matching That Exact Date', async ({ page }) => {
     await gotoAccountDetails(page);
-    const defaultDocumentNumbers = await readColumn(page, COLUMN_INDEX.documentNo);
+    const defaultDocumentNumbers = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
 
     await test.step('Pick a due date', async () => {
-        await pickCalendarDate(page, SELECTORS.dueDateInput, 11, 8, 2026);
+        await TABLE.pickCalendarDate(page, SELECTORS.dueDateInput, 11, 8, 2026);
     });
 
     await test.step('Every visible result should have exactly that due date', async () => {
-        const dueDates = await readColumn(page, COLUMN_INDEX.dueDate);
+        const dueDates = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.dueDate);
         expect(dueDates.length, 'Filtering by due date 11/08/2026 should return at least one result').toBeGreaterThan(0);
         for (const dueDate of dueDates) {
             expect(dueDate, `Row's Due Date should be exactly "11/08/2026"`).toBe('11/08/2026');
@@ -388,109 +292,109 @@ test('Filters - Due Date Shows Results Matching That Exact Date', async ({ page 
     });
 
     await test.step('Clearing the field restores the full list', async () => {
-        await clearFilter(page, SELECTORS.dueDateInput);
-        const restored = await readColumn(page, COLUMN_INDEX.documentNo);
+        await TABLE.clearFilter(page, SELECTORS.dueDateInput);
+        const restored = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
         expect(restored, 'Clearing Due Date should restore the original unfiltered list').toEqual(defaultDocumentNumbers);
     });
 });
 
 test('Filters - End Date Produces a Broad Result Set', async ({ page }) => {
     await gotoAccountDetails(page);
-    const defaultDocumentNumbers = await readColumn(page, COLUMN_INDEX.documentNo);
+    const defaultDocumentNumbers = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
 
     await test.step('Pick an end date', async () => {
-        await pickCalendarDate(page, SELECTORS.endDateInput, 17, 8, 2026);
+        await TABLE.pickCalendarDate(page, SELECTORS.endDateInput, 17, 8, 2026);
     });
 
     await test.step('A broad, non-empty result set should be shown', async () => {
-        const documentNumbers = await readColumn(page, COLUMN_INDEX.documentNo);
+        const documentNumbers = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
         expect(documentNumbers.length, 'Filtering by end date 17/08/2026 should show a substantial number of results ("lots")').toBeGreaterThanOrEqual(5);
     });
 
     await test.step('Clearing the field restores the full list', async () => {
-        await clearFilter(page, SELECTORS.endDateInput);
-        const restored = await readColumn(page, COLUMN_INDEX.documentNo);
+        await TABLE.clearFilter(page, SELECTORS.endDateInput);
+        const restored = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
         expect(restored, 'Clearing End Date should restore the original unfiltered list').toEqual(defaultDocumentNumbers);
     });
 });
 
 test('Filters - Quantity Range Behaves As Currently Implemented (Known Limitation)', async ({ page }) => {
     await gotoAccountDetails(page);
-    const defaultDocumentNumbers = await readColumn(page, COLUMN_INDEX.documentNo);
+    const defaultDocumentNumbers = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
 
     await test.step('Quantity Min with any value returns zero results', async () => {
         // Every invoice in this account's history has Quantity (Ltrs) = 0 (confirmed
         // 2026-09-02, same finding as the sort-by-Quantity test below) - a Min greater than 0
         // legitimately excludes everything under the current data/feature state.
         await page.fill(SELECTORS.quantityMinInput, '1');
-        await waitForFilterToSettle(page);
+        await TABLE.waitForFilterToSettle(page);
         await expect(page.locator(SELECTORS.tableRow), 'Quantity Min filter should currently return zero results').toHaveCount(0);
-        await clearFilter(page, SELECTORS.quantityMinInput);
+        await TABLE.clearFilter(page, SELECTORS.quantityMinInput);
     });
 
     await test.step('Quantity Max ignores its value and always shows the same results', async () => {
         await page.fill(SELECTORS.quantityMaxInput, '5');
-        await waitForFilterToSettle(page);
-        const withSmallMax = await readColumn(page, COLUMN_INDEX.documentNo);
+        await TABLE.waitForFilterToSettle(page);
+        const withSmallMax = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
 
         await page.fill(SELECTORS.quantityMaxInput, '9999');
-        await waitForFilterToSettle(page);
-        const withLargeMax = await readColumn(page, COLUMN_INDEX.documentNo);
+        await TABLE.waitForFilterToSettle(page);
+        const withLargeMax = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
 
         expect(withLargeMax, 'Quantity Max should currently produce the same results regardless of the value entered').toEqual(withSmallMax);
         expect(withLargeMax, 'Quantity Max should currently leave the list unfiltered').toEqual(defaultDocumentNumbers);
 
-        await clearFilter(page, SELECTORS.quantityMaxInput);
+        await TABLE.clearFilter(page, SELECTORS.quantityMaxInput);
     });
 });
 
 test('Filters - Total Range Filters Results by Value (Typed and Spinner Input)', async ({ page }) => {
     await gotoAccountDetails(page);
-    const defaultDocumentNumbers = await readColumn(page, COLUMN_INDEX.documentNo);
+    const defaultDocumentNumbers = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo);
 
     await test.step('Typing a Total Min value filters results at or above it', async () => {
         await page.fill(SELECTORS.totalMinInput, '100');
-        await waitForFilterToSettle(page);
-        const totals = await readColumn(page, COLUMN_INDEX.total);
+        await TABLE.waitForFilterToSettle(page);
+        const totals = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.total);
         expect(totals.length, 'Filtering by Total Min 100 should return at least one result').toBeGreaterThan(0);
         for (const total of totals) {
-            expect(parseCurrency(total), `Row total "${total}" should be at least £100`).toBeGreaterThanOrEqual(100);
+            expect(TABLE.parseCurrency(total), `Row total "${total}" should be at least £100`).toBeGreaterThanOrEqual(100);
         }
-        await clearFilter(page, SELECTORS.totalMinInput);
-        expect(await readColumn(page, COLUMN_INDEX.documentNo), 'Clearing Total Min should restore the unfiltered list').toEqual(defaultDocumentNumbers);
+        await TABLE.clearFilter(page, SELECTORS.totalMinInput);
+        expect(await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo), 'Clearing Total Min should restore the unfiltered list').toEqual(defaultDocumentNumbers);
     });
 
     await test.step('Typing a Total Max value filters results at or below it', async () => {
         await page.fill(SELECTORS.totalMaxInput, '100');
-        await waitForFilterToSettle(page);
-        const totals = await readColumn(page, COLUMN_INDEX.total);
+        await TABLE.waitForFilterToSettle(page);
+        const totals = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.total);
         expect(totals.length, 'Filtering by Total Max 100 should return at least one result').toBeGreaterThan(0);
         for (const total of totals) {
-            expect(parseCurrency(total), `Row total "${total}" should be at most £100`).toBeLessThanOrEqual(100);
+            expect(TABLE.parseCurrency(total), `Row total "${total}" should be at most £100`).toBeLessThanOrEqual(100);
         }
-        await clearFilter(page, SELECTORS.totalMaxInput);
-        expect(await readColumn(page, COLUMN_INDEX.documentNo), 'Clearing Total Max should restore the unfiltered list').toEqual(defaultDocumentNumbers);
+        await TABLE.clearFilter(page, SELECTORS.totalMaxInput);
+        expect(await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo), 'Clearing Total Max should restore the unfiltered list').toEqual(defaultDocumentNumbers);
     });
 
     await test.step('The spinner arrows increment/decrement Total Min, and results follow', async () => {
         await page.locator(SELECTORS.totalMinInput).focus();
         await page.keyboard.press('ArrowUp');
         await page.keyboard.press('ArrowUp');
-        await waitForFilterToSettle(page);
+        await TABLE.waitForFilterToSettle(page);
         const value = await page.locator(SELECTORS.totalMinInput).inputValue();
         expect(Number(value), 'Pressing the up arrow twice from empty should set Total Min to 2').toBe(2);
 
-        const totals = await readColumn(page, COLUMN_INDEX.total);
+        const totals = await TABLE.readColumn(page, TABLE.COLUMN_INDEX.total);
         for (const total of totals) {
-            expect(parseCurrency(total), `Row total "${total}" should be at least £${value} after using the spinner`).toBeGreaterThanOrEqual(Number(value));
+            expect(TABLE.parseCurrency(total), `Row total "${total}" should be at least £${value} after using the spinner`).toBeGreaterThanOrEqual(Number(value));
         }
 
         await page.keyboard.press('ArrowDown');
-        await waitForFilterToSettle(page);
+        await TABLE.waitForFilterToSettle(page);
         expect(await page.locator(SELECTORS.totalMinInput).inputValue(), 'Pressing the down arrow should decrement Total Min back to 1').toBe('1');
 
-        await clearFilter(page, SELECTORS.totalMinInput);
-        expect(await readColumn(page, COLUMN_INDEX.documentNo), 'Clearing Total Min should restore the unfiltered list').toEqual(defaultDocumentNumbers);
+        await TABLE.clearFilter(page, SELECTORS.totalMinInput);
+        expect(await TABLE.readColumn(page, TABLE.COLUMN_INDEX.documentNo), 'Clearing Total Min should restore the unfiltered list').toEqual(defaultDocumentNumbers);
     });
 });
 
@@ -512,7 +416,7 @@ test('Account Details - History Table Shows Sort and Download Controls', async (
 
         await expect(page.locator(SELECTORS.sortToggle), 'Sort dropdown should report itself as open').toHaveAttribute('aria-expanded', 'true');
         await expect(page.locator(SELECTORS.sortChevron), 'Sort chevron should flip to its open state').toHaveClass(/dropdown__chevron--open/);
-        await expect(page.locator(SELECTORS.sortItem), 'Sort options should be listed').toHaveCount(SORT_FIELDS.length);
+        await expect(page.locator(SELECTORS.sortItem), 'Sort options should be listed').toHaveCount(TABLE.SORT_FIELDS.length);
     });
 
     await test.step('Clicking the toggle again collapses it back', async () => {
@@ -635,22 +539,22 @@ test('Filters - Actions Column Downloads Invoice as PDF or Excel (Sample of 5 Ro
     }
 });
 
-for (const field of SORT_FIELDS) {
-    const expectReorder = !FIELDS_WITH_NO_VISIBLE_REORDER.includes(field);
+for (const field of TABLE.SORT_FIELDS) {
+    const expectReorder = !TABLE.FIELDS_WITH_NO_VISIBLE_REORDER.includes(field);
 
     test(`Account Details - Sorting By "${field}" Updates the Table`, async ({ page }) => {
         await gotoAccountDetails(page);
-        const defaultOrder = await readDocumentNumbers(page);
+        const defaultOrder = await TABLE.readDocumentNumbers(page);
 
         await test.step(`Select "${field}" from the sort options`, async () => {
-            await openSortDropdown(page);
+            await TABLE.openSortDropdown(page);
             // "Date" is a substring of "Due Date" - hasText would match both, so match the
             // option's accessible name exactly instead.
             await page.locator(SELECTORS.sortDropdown).getByRole('button', { name: field, exact: true }).click();
             await expect(page.locator(SELECTORS.sortToggleText), `Sort toggle should read "Sort by: ${field}"`).toHaveText(`Sort by: ${field}`);
         });
 
-        const ascendingOrder = await readDocumentNumbers(page);
+        const ascendingOrder = await TABLE.readDocumentNumbers(page);
         if (expectReorder) {
             expect(ascendingOrder, `Sorting by "${field}" should change the table's row order from the default view`).not.toEqual(defaultOrder);
         } else {
@@ -658,11 +562,11 @@ for (const field of SORT_FIELDS) {
         }
 
         await test.step('Switch the direction to descending', async () => {
-            await openSortDropdown(page);
+            await TABLE.openSortDropdown(page);
             await page.click(SELECTORS.sortDescendingButton);
         });
 
-        const descendingOrder = await readDocumentNumbers(page);
+        const descendingOrder = await TABLE.readDocumentNumbers(page);
         if (expectReorder) {
             expect(descendingOrder, `Switching "${field}" to descending should change the row order again`).not.toEqual(ascendingOrder);
         } else {

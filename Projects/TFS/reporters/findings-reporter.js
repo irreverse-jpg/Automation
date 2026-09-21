@@ -27,6 +27,12 @@ const FRIENDLY_FILE_NAMES = {
     '01-tfs.login.spec.js': 'Login',
     '02-tfs.dashboard.spec.js': 'Dashboard',
     '03-tfs.accountdetails.spec.js': 'Account Details',
+    '04-tfs.invoices.spec.js': 'Invoices',
+    '05-tfs.sitelocator.spec.js': 'Site Locator',
+    '06-tfs.transactions.spec.js': 'Transactions',
+    '07-tfs.payments.spec.js': 'Payments',
+    '08-tfs.managecards.spec.js': 'Manage Cards',
+    '09-tfs.additionalservices.spec.js': 'Additional Services',
 };
 
 const FRIENDLY_PROJECT_NAMES = {

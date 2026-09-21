@@ -1,0 +1,667 @@
+[
+  {
+    "path": "/",
+    "liveTitle": "Care Homes | Residential, Nursing and Dementia | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Care Homes | Residential, Nursing and Dementia | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/care-homes",
+    "liveTitle": "Find a care home | Care homes near me | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Find a care home | Care homes near me | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/careers",
+    "liveTitle": "Careers | Care Homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Careers | Care Homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company",
+    "liveTitle": "About our company | Who we are | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "About our company | Who we are | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns",
+    "liveTitle": "Campaigns at Care UK | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Campaigns at Care UK | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/a-taste-of-home",
+    "liveTitle": "A Taste of Home | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": null,
+    "xbykStatus": 404
+  },
+  {
+    "path": "/company/care-uk-campaigns/bedtime-stories",
+    "liveTitle": "Watch Care UK&#x27;s bedtime stories | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Watch Care UK&#x27;s bedtime stories | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/dday-80th-anniversary",
+    "liveTitle": "80th Anniversary of D-Day | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "80th Anniversary of D-Day | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/fixer-uppers",
+    "liveTitle": "Fixer Uppers | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Fixer Uppers | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/generations-of-change",
+    "liveTitle": "Generations of Change  | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Generations of Change  | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/goal-den-moments",
+    "liveTitle": "Goal-den moments | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Goal-den moments | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/harvest-festival",
+    "liveTitle": "Harvest Festival  | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Harvest Festival  | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/recipes-to-remember",
+    "liveTitle": "Recipes to remember cook book | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Recipes to remember cook book | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/step-into-christmas",
+    "liveTitle": "Step into Christmas | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Step into Christmas | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/the-big-care-uk-sports-day",
+    "liveTitle": "The Big Care UK Sports Day | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "The Big Care UK Sports Day | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/the-big-dementia-conversation",
+    "liveTitle": "The Big Dementia Conversation | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "The Big Dementia Conversation | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/the-centenarian-club",
+    "liveTitle": "The Centenarian Club  | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "The Centenarian Club  | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/ve-day-80th-anniversary",
+    "liveTitle": "VE Day 80th Anniversary | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "VE Day 80th Anniversary | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/care-uk-campaigns/wisdom-booths",
+    "liveTitle": "Care UK residents share their advice | Wisdom Booths | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Care UK residents share their advice | Wisdom Booths | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/complaints",
+    "liveTitle": "Complaints about our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Complaints about our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/esg",
+    "liveTitle": "ESG | About our company | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "ESG | About our company | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/our-management-team",
+    "liveTitle": "Our management team | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our management team | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/our-management-team/andrew-knight",
+    "liveTitle": "Andrew Knight | Our management team | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Andrew Knight | Our management team | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/our-management-team/jacqui-white",
+    "liveTitle": "Jacqui White | Our management team | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Jacqui White | Our management team | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/our-management-team/leah-queripel",
+    "liveTitle": "Leah Queripel | Our management team | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Leah Queripel | Our management team | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/our-management-team/martin-friend",
+    "liveTitle": "Martin Friend | Our management team | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Martin Friend | Our management team | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/our-management-team/matt-rosenberg",
+    "liveTitle": "Matt Rosenberg | Our management team | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Matt Rosenberg | Our management team | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/our-management-team/rachel-harvey",
+    "liveTitle": "Rachel Harvey | Our management team | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Rachel Harvey | Our management team | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/our-management-team/richard-pearman",
+    "liveTitle": "Richard Pearman | Our management team | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Richard Pearman | Our management team | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/our-management-team/tony-weedon",
+    "liveTitle": "Tony Weedon | Our management team | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Tony Weedon | Our management team | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/company/we-all-shape-our-values",
+    "liveTitle": "Our core care home values | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our core care home values | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/help-advice",
+    "liveTitle": "Help and advice - Care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Help and advice - Care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/help-advice/dementia-help-advice",
+    "liveTitle": "Dementia help &amp; advice - Care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Dementia help &amp; advice - Care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/help-advice/our-guides",
+    "liveTitle": "Our guides | Help &amp; advice | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our guides | Help &amp; advice | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/legal-regulatory",
+    "liveTitle": "Legal and regulatory | Care UK | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Legal and regulatory | Care UK | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/legal-regulatory/cookie-declaration",
+    "liveTitle": "Cookie declaration | Care UK | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Cookie declaration | Care UK | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/legal-regulatory/web-accessibility-statement",
+    "liveTitle": "Web accessibility statement | Care UK | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Web accessibility statement | Care UK | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home",
+    "liveTitle": "Life in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Life in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/community",
+    "liveTitle": "Local comunity collaboration | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Local comunity collaboration | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/environment-facilities",
+    "liveTitle": "Environment &amp; facilities in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Environment &amp; facilities in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/food",
+    "liveTitle": "Food in our care homes | Meals we provide | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Food in our care homes | Meals we provide | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/food/chef-of-the-year",
+    "liveTitle": "Chef of the Year | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Chef of the Year | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/food/nutrition-hydration",
+    "liveTitle": "Nutrition and hydration in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Nutrition and hydration in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/food/our-catering-teams",
+    "liveTitle": "Catering in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Catering in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/food/our-dining-experience",
+    "liveTitle": "Dining with dignity - The dining experience in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Dining with dignity - The dining experience in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/food/personalisation-choice",
+    "liveTitle": "Tailored meals in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Tailored meals in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/food/sample-menu",
+    "liveTitle": "Sample menus - Menu ideas in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Sample menus - Menu ideas in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/lifestyle",
+    "liveTitle": "Lifestyle | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Lifestyle | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/lifestyle/activities-and-outgoings",
+    "liveTitle": "Activites and outgoings in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Activites and outgoings in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/lifestyle/keeping-active",
+    "liveTitle": "Keeping active in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Keeping active in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/lifestyle/meaningful-lifestyles",
+    "liveTitle": "Meaningful lifestyles in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Meaningful lifestyles in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/lifestyle/use-of-technology",
+    "liveTitle": "Use of technology in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Use of technology in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/our-teams",
+    "liveTitle": "Our passionate care home teams | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our passionate care home teams | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/visiting",
+    "liveTitle": "Care home visits &amp; visiting rules | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Care home visits &amp; visiting rules | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/life-at-a-care-uk-home/wishing-trees",
+    "liveTitle": "Our wishing tree initiative | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our wishing tree initiative | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/news",
+    "liveTitle": null,
+    "liveStatus": "ERR:The operation was aborted due to timeout",
+    "xbykTitle": "Care UK news | News in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care",
+    "liveTitle": "Our approach to care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our approach to care | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/clinical-expertise",
+    "liveTitle": "Clinical expertise in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Clinical expertise in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/our-performance",
+    "liveTitle": "Our performance | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our performance | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/our-performance/care-in-scotland",
+    "liveTitle": "Care in Scotland | Care UK | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Care in Scotland | Care UK | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/our-performance/cqc",
+    "liveTitle": "CQC and ratings | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "CQC and ratings | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/our-performance/our-awards",
+    "liveTitle": "Our awards | Care home awards | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our awards | Care home awards | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/person-led-care",
+    "liveTitle": "Person-led care | Care UK | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Person-led care | Care UK | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/safety-cleanliness",
+    "liveTitle": "Our commitment to safety and cleanliness | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our commitment to safety and cleanliness | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/safety-cleanliness/reducing-infections",
+    "liveTitle": "Our approach to reducing infections in our Care Homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our approach to reducing infections in our Care Homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/veteran-friendly-framework",
+    "liveTitle": "Veteran Friendly Framework Care Homes Programme.  | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": null,
+    "xbykStatus": "ERR:The operation was aborted due to timeout"
+  },
+  {
+    "path": "/our-approach-to-care/what-quality-means-to-us",
+    "liveTitle": "What quality means to us | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "What quality means to us | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/what-quality-means-to-us/andrew-knight-on-quality",
+    "liveTitle": "Andrew Knight on quality | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Andrew Knight on quality | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/what-quality-means-to-us/omar-taylor-on-quality",
+    "liveTitle": "Omar Taylor on quality | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Omar Taylor on quality | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/our-approach-to-care/what-quality-means-to-us/rachel-gilbert-on-quality",
+    "liveTitle": "Rachel Harvey on quality | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Rachel Harvey on quality | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/privacy-policies",
+    "liveTitle": "Privacy Policies | Care UK | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Privacy Policies | Care UK | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care",
+    "liveTitle": "Types of care | Care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Types of care | Care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/day-clubs",
+    "liveTitle": "Day clubs | Types of care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Day clubs | Types of care | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/dementia-care",
+    "liveTitle": "Dementia care | Care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Dementia care | Care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/dementia-care/dementia-friendly-environments",
+    "liveTitle": "Dementia friendly environments | Dementia care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Dementia friendly environments | Dementia care | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/dementia-care/getting-to-know-you",
+    "liveTitle": "Living with dementia | Getting to know you | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Living with dementia | Getting to know you | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/dementia-care/namaste-care",
+    "liveTitle": "Namaste care homes | Care UK | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Namaste care homes | Care UK | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/dementia-care/our-people-and-training",
+    "liveTitle": "Our people &amp; training | Training for dementia care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our people &amp; training | Training for dementia care | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/dementia-care/support-for-families-and-carers",
+    "liveTitle": "Dementia support for families, friends and carers | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Dementia support for families, friends and carers | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/end-of-life-care",
+    "liveTitle": "End of life care in our care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "End of life care in our care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/nursing-care",
+    "liveTitle": "What is nursing care? | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "What is nursing care? | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/nursing-dementia-care",
+    "liveTitle": "Nursing dementia care | Care homes | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Nursing dementia care | Care homes | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/residential-care",
+    "liveTitle": "What is residential care? | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "What is residential care? | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/types-of-care/respite-care",
+    "liveTitle": "What is short-term 24 hour respite care? | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "What is short-term 24 hour respite care? | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/what-others-have-to-say",
+    "liveTitle": "What others have to say | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "What others have to say | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start",
+    "liveTitle": "Where do I start? | Finding a care home | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Where do I start? | Finding a care home | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start/about-our-care-support-team",
+    "liveTitle": "Our care support team | Starting your journey into care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Our care support team | Starting your journey into care | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start/booking-a-viewing",
+    "liveTitle": "Booking a viewing in our care homes | Starting your journey into care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Booking a viewing in our care homes | Starting your journey into care | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start/choosing-a-care-home",
+    "liveTitle": "Choosing a care home | Starting your journey into care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Choosing a care home | Starting your journey into care | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start/do-i-need-care",
+    "liveTitle": "Do I need care | When to consider a care home | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Do I need care | When to consider a care home | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start/moving-in",
+    "liveTitle": "Moving to a care home | Starting your journey into care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Moving to a care home | Starting your journey into care | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start/support-at-a-stressful-time",
+    "liveTitle": "Support at a stressful time | When to consider a care home | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "Support at a stressful time | When to consider a care home | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start/what-affects-cost",
+    "liveTitle": "What affects cost | Care home funding | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "What affects cost | Care home funding | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start/what-does-a-good-care-home-look-like",
+    "liveTitle": "What does a good care home look like? | Starting your journey into care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "What does a good care home look like? | Starting your journey into care | Care UK",
+    "xbykStatus": 200
+  },
+  {
+    "path": "/where-do-i-start/what-is-a-care-home",
+    "liveTitle": "What is a care home? | Starting your journey into care | Care UK",
+    "liveStatus": 200,
+    "xbykTitle": "What is a care home? | Starting your journey into care | Care UK",
+    "xbykStatus": 200
+  }
+]

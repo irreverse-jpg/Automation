@@ -1,3 +1,5 @@
+const { expect } = require('@playwright/test');
+
 // Shared selectors/helpers for the header + sidebar chrome common to every page inside the
 // portal ("/portal/*") - confirmed 2026-09-02 identical markup/behaviour across every portal
 // page (Dashboard, Account Details, ...) and across desktop/tablet/mobile (only CSS positioning
@@ -54,4 +56,19 @@ async function isBeforeInDom(page, selectorA, selectorB) {
     }, [selectorA, selectorB]);
 }
 
-module.exports = { HEADER_SELECTORS, SIDEBAR_SELECTORS, isSidebarCollapsed, navigateViaSidebar, isBeforeInDom };
+// Switches the header's account dropdown to a different account - extracted here 2026-09-18
+// while building 07-tfs.payments.spec.js, since 02-tfs.dashboard.spec.js already has its own
+// (identical) copy - a genuine 2nd real occurrence, not a hypothetical future one (same pattern
+// as history-table-helpers.js's extraction). 02-tfs.dashboard.spec.js keeps its own copy rather
+// than being refactored, to avoid touching already-verified test code. Waits for network idle
+// after switching, same as navigateViaSidebar() - switching accounts can retrigger a page's own
+// async widgets (e.g. Dashboard's conditional "pending transactions" alert), which can still be
+// reflowing the page after the click resolves.
+async function selectAccount(page, accountName) {
+    await page.click(HEADER_SELECTORS.accountDropdownToggle);
+    await page.locator(HEADER_SELECTORS.accountDropdownItem, { hasText: accountName }).click();
+    await expect(page.locator(HEADER_SELECTORS.accountDropdownToggleText), `Header label should update to "${accountName}"`).toHaveText(accountName);
+    await page.waitForLoadState('networkidle').catch(() => { });
+}
+
+module.exports = { HEADER_SELECTORS, SIDEBAR_SELECTORS, isSidebarCollapsed, navigateViaSidebar, isBeforeInDom, selectAccount };
