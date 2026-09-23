@@ -22,21 +22,12 @@ const fs = require('fs');
 const path = require('path');
 const ExcelJS = require('exceljs');
 
-// Update as spec files are added.
 const FRIENDLY_FILE_NAMES = {
-    '01-tfs.login.spec.js': 'Login',
-    '02-tfs.dashboard.spec.js': 'Dashboard',
-    '03-tfs.accountdetails.spec.js': 'Account Details',
-    '04-tfs.invoices.spec.js': 'Invoices',
-    '05-tfs.sitelocator.spec.js': 'Site Locator',
-    '06-tfs.transactions.spec.js': 'Transactions',
-    '07-tfs.payments.spec.js': 'Payments',
-    '08-tfs.managecards.spec.js': 'Manage Cards',
-    '09-tfs.additionalservices.spec.js': 'Additional Services',
-    '10-tfs.faqs.spec.js': 'FAQs',
-    '11-tfs.contact.spec.js': 'Contact',
-    '12-tfs.envcompare.spec.js': 'Environment Comparison',
-    '13-tfs.nonfunctional.spec.js': 'Non-Functional (Security & Accessibility)',
+    '01-turn2us.homepage.spec.js': 'Homepage',
+    '02-turn2us.meganav.spec.js': 'Main Menu (Meganav)',
+    '03-turn2us.footer.spec.js': 'Footer',
+    '04-turn2us.search.spec.js': 'Site Search',
+    '05-turn2us.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
 };
 
 const FRIENDLY_PROJECT_NAMES = {
@@ -166,7 +157,7 @@ class FindingsReporter {
 
     buildWorkbook(timestamp) {
         const workbook = new ExcelJS.Workbook();
-        workbook.creator = 'TFS QA Automation';
+        workbook.creator = 'Turn2us QA Automation';
         workbook.created = timestamp;
 
         this.addSummarySheet(workbook, timestamp);
@@ -180,7 +171,7 @@ class FindingsReporter {
         const sheet = workbook.addWorksheet('Summary');
         sheet.columns = [{ width: 28 }, { width: 50 }];
 
-        sheet.addRow(['The Fuel Store - Test Findings']).font = { bold: true, size: 16 };
+        sheet.addRow(['Turn2us Website - Test Findings']).font = { bold: true, size: 16 };
         sheet.addRow([`Generated ${timestamp.toLocaleString('en-GB')}`]);
         sheet.addRow([]);
 
@@ -217,7 +208,7 @@ class FindingsReporter {
         const headerRow = sheet.getRow(1);
         headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         headerRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF049EE0' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF041E42' } };
             cell.alignment = { vertical: 'middle' };
         });
 
@@ -257,7 +248,7 @@ class FindingsReporter {
         const headerRow = sheet.getRow(1);
         headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         headerRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF049EE0' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF041E42' } };
             cell.alignment = { vertical: 'middle' };
         });
 

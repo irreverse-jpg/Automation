@@ -33,6 +33,10 @@
             "path": "VariousTests"
         },
         {
+            "name": "Turn2US",
+            "path": "Turn2US"
+        },
+        {
             "name": "Shared",
             "path": "../Shared"
         }

@@ -22,6 +22,17 @@ async function submitLogin(page, email, password) {
     await page.click(SELECTORS.loginButton);
 }
 
+// True for the Live environment (`https://www.thefuelstore.co.uk`), false for QA
+// (`tfs-qa.hosted.positive.co.uk`) - added 2026-09-23 so any spec that submits a real form can
+// gate the actual submission on environment, per Hector's explicit instruction that Live must
+// never receive a completed, successful form submission (QA-only real submissions remain an
+// accepted, documented side effect - see 09-tfs.additionalservices.spec.js). Checks for the QA
+// hostname rather than the Live one, so a not-yet-anticipated third environment fails safe (is
+// treated as Live, i.e. submission-blocking) rather than accidentally submitting for real.
+function isLiveEnvironment(baseURL) {
+    return !String(baseURL || '').includes('tfs-qa');
+}
+
 // NOTE (2026-09-02): a "log into a fresh, isolated context" helper used to live here, meant for
 // tests that switch the selected account, so they wouldn't affect every other test sharing
 // global-setup.js's storageState. It didn't work: confirmed by comparing cookies directly that
@@ -34,4 +45,4 @@ async function submitLogin(page, email, password) {
 // shared-session note in 02-tfs.dashboard.spec.js for how this is handled instead (documentation
 // + serial ordering, not isolation).
 
-module.exports = { LOGIN_PATH, DASHBOARD_PATH, AUTH_ERROR_MESSAGE, SELECTORS, submitLogin };
+module.exports = { LOGIN_PATH, DASHBOARD_PATH, AUTH_ERROR_MESSAGE, SELECTORS, submitLogin, isLiveEnvironment };

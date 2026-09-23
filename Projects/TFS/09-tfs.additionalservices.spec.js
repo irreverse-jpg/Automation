@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { DASHBOARD_PATH } = require('./login-helpers');
+const { DASHBOARD_PATH, isLiveEnvironment } = require('./login-helpers');
 const { HEADER_SELECTORS, navigateViaSidebar, isBeforeInDom } = require('./portal-helpers');
 const { getCurrentSubmissionNumber, incrementSubmissionNumber } = require('./submissionCounter');
 
@@ -33,16 +33,21 @@ test.afterEach(async ({ page }, testInfo) => {
 // FraudGuard, AdBlue) and all of the above is identical on QA and Live - no environment-specific
 // branching needed anywhere in this file.
 //
-// **IMPORTANT - this spec creates REAL enquiry submissions every time it runs, unlike this
-// project's download tests (always `.cancel()`ed):** a real "Send" with valid data genuinely posts
-// to the app's live enquiry-handling endpoint and would reach TFS's Customer Support Team's real
-// inbox/CRM in Live - there is no "cancel" equivalent for a form POST the way there is for a
-// download. This is unavoidable given the task (proving the success message appears requires a
-// real successful submission), so - per Hector's own instruction - every field uses unique,
-// clearly-fake, rotating test data (via the shared `submissionCounter.js`, already built for
-// exactly this kind of case) rather than static/repeated values, so real support staff looking at
-// these can identify them as automated test traffic at a glance (e.g. "Hectorone Smithone",
-// phone starting 07738444, `testN@test.com`). All 4 services WITHIN THE SAME PROJECT (viewport)
+// **IMPORTANT - this spec creates a REAL enquiry submission, but ONLY on QA:** a real "Send" with
+// valid data genuinely posts to the app's live enquiry-handling endpoint and would reach TFS's
+// Customer Support Team's real inbox/CRM - there is no "cancel" equivalent for a form POST the way
+// there is for a download. **Confirmed 2026-09-23, per Hector's explicit instruction, that Live
+// must NEVER receive a real, completed, successful submission from this spec** - this had NOT been
+// implemented when this file was first built (it submitted for real on both QA and Live, run
+// 2026-09-21) and was fixed retroactively. On Live, the final step now fills Email (the last
+// required field) and confirms the form has become genuinely submittable (native `checkValidity()`
+// on the whole form returns `true`), then closes the panel via X WITHOUT ever clicking Send - this
+// still proves the enquiry would succeed if sent, without actually sending it. On QA, the existing
+// real-submission behaviour is unchanged and remains an accepted, documented side effect - every
+// field uses unique, clearly-fake, rotating test data (via the shared `submissionCounter.js`,
+// already built for exactly this kind of case) rather than static/repeated values, so real support
+// staff looking at these can identify them as automated test traffic at a glance (e.g. "Hectorone
+// Smithone", phone starting 07738444, `testN@test.com`). All 4 services WITHIN THE SAME PROJECT (viewport)
 // share one submission number, per Hector's explicit instruction - confirmed 2026-09-21 the
 // counter genuinely advances once per PROJECT, not once per whole `npx playwright test` command:
 // Playwright reloads this file's module fresh for each (file, project) pairing even under
@@ -72,8 +77,9 @@ test.afterEach(async ({ page }, testInfo) => {
 //   3. Additional Services - The Four Services Appear in the Same Order (FuelConnect, Clean Air
 //      Partnership (CAP), FraudGuard, AdBlue)
 //   4. FuelConnect - Log In Opens the FuelConnect App in a New Tab
-//   5. "<service>" - Enquire Panel Prefills Regarding and Submits Successfully (one test per
-//      service: FuelConnect, Clean Air Partnership (CAP), FraudGuard, AdBlue)
+//   5. "<service>" - Enquire Panel Prefills Regarding, Validates, and Submits Successfully (QA)
+//      or Confirms the Form Is Submittable Without Sending It (Live) - one test per service:
+//      FuelConnect, Clean Air Partnership (CAP), FraudGuard, AdBlue
 // ============================================================================
 
 const ADDITIONAL_SERVICES_PATH = '/portal/additional-services';
@@ -212,7 +218,8 @@ test('FuelConnect - Log In Opens the FuelConnect App in a New Tab', async ({ pag
 });
 
 for (const service of SERVICES) {
-    test(`"${service.name}" - Enquire Panel Prefills Regarding and Submits Successfully`, async ({ page }) => {
+    test(`"${service.name}" - Enquire Panel Prefills Regarding and Submits Successfully`, async ({ page, baseURL }) => {
+        const onLive = isLiveEnvironment(baseURL);
         await gotoAdditionalServices(page);
         const panel = page.locator(SELECTORS.panel).filter({ hasText: service.name }).first();
 
@@ -251,20 +258,34 @@ for (const service of SERVICES) {
             await expectNextRequiredField(page, SELECTORS.emailInput, 'Email');
         });
 
-        await test.step('Filling Email allows the message to be sent, even with Message left blank', async () => {
+        await test.step('Filling Email completes the required fields, even with Message left blank', async () => {
             await page.fill(SELECTORS.emailInput, ENQUIRY_DATA.email);
             // Message is deliberately left blank here - confirmed 2026-09-21 it has no `required`
             // attribute, unlike every other field, so a real enquiry can be sent with no message
             // content at all. Documented as a UX gap in this file's header comment, not chased
             // further per Hector's instruction.
             await expect(page.locator(SELECTORS.messageInput), 'Message should start blank').toHaveValue('');
-            await page.click(SELECTORS.sendButton);
         });
 
-        await test.step('A real success message should appear', async () => {
-            await expect(page.locator(SELECTORS.successMessage), 'A success message should confirm the enquiry was sent').toBeVisible();
-            await expect(page.locator(SELECTORS.successMessage), 'Success message should have the expected wording').toHaveText('Your message has been sent successfully.');
-        });
+        if (onLive) {
+            await test.step('Live: confirm the form would submit successfully, WITHOUT actually sending it', async () => {
+                // Per Hector's explicit instruction, Live must never receive a real, completed
+                // submission from this spec. `checkValidity()` reports whether the browser's own
+                // native validation considers every required field satisfied - true proof the form
+                // is ready to submit, without triggering the real POST that clicking Send would.
+                const formIsValid = await page.locator(SELECTORS.emailInput).evaluate((el) => el.closest('form').checkValidity());
+                expect(formIsValid, 'The form should be genuinely submittable once all required fields are filled').toBe(true);
+            });
+        } else {
+            await test.step('QA: clicking Send submits the enquiry for real', async () => {
+                await page.click(SELECTORS.sendButton);
+            });
+
+            await test.step('A real success message should appear', async () => {
+                await expect(page.locator(SELECTORS.successMessage), 'A success message should confirm the enquiry was sent').toBeVisible();
+                await expect(page.locator(SELECTORS.successMessage), 'Success message should have the expected wording').toHaveText('Your message has been sent successfully.');
+            });
+        }
 
         await test.step('Closing via X ends the journey', async () => {
             await page.click(SELECTORS.modalClose);

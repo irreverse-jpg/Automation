@@ -59,9 +59,6 @@ test.afterEach(async ({ page }, testInfo) => {
 //        XBK-22 findings were discovered).
 //   Security & caching response headers - Strict-Transport-Security,
 //        Cache-Control, Server, X-Content-Type-Options, Referrer-Policy.
-//   CurrentContact cookie shape and SameSite policy - checks the cookie
-//        VALUE is a clean GUID (not something with extra text appended)
-//        on each environment, and that SameSite matches between them.
 //   robots.txt Sitemap: lines point at their own domain - not a
 //        cross-environment diff, a same-file-wrong-for-one-environment
 //        check (see XBK-27 in the original report).
@@ -345,23 +342,13 @@ test.describe('Environment Comparison', () => {
         });
     });
 
-    test('Environment Compare - CurrentContact cookie shape and SameSite policy', async ({ baseURL }, testInfo) => {
-        test.skip(testInfo.project.name !== 'desktop-chromium', 'Cookies set on the first response are device-independent.');
-
-        const [resA, resB] = await Promise.all([fetch(baseURL), fetch(COMPARE_BASE_URL)]);
-        const cookieA = resA.headers.get('set-cookie') || '';
-        const cookieB = resB.headers.get('set-cookie') || '';
-
-        const valueA = (cookieA.match(/CurrentContact=([^;]*)/) || [])[1] || '';
-        const valueB = (cookieB.match(/CurrentContact=([^;]*)/) || [])[1] || '';
-
-        expect.soft(/^[0-9a-f-]{36}$/i.test(valueA), `CurrentContact cookie value on ${hostLabel(baseURL)} should be a clean GUID with nothing appended, not "${valueA}"`).toBe(true);
-        expect.soft(/^[0-9a-f-]{36}$/i.test(valueB), `CurrentContact cookie value on ${hostLabel(COMPARE_BASE_URL)} should be a clean GUID with nothing appended, not "${valueB}"`).toBe(true);
-
-        const sameSiteA = (cookieA.match(/samesite=([^;]*)/i) || [])[1] || '';
-        const sameSiteB = (cookieB.match(/samesite=([^;]*)/i) || [])[1] || '';
-        expect.soft(sameSiteA.toLowerCase(), `CurrentContact SameSite policy should match between ${hostLabel(baseURL)} ("${sameSiteA}") and ${hostLabel(COMPARE_BASE_URL)} ("${sameSiteB}")`).toBe(sameSiteB.toLowerCase());
-    });
+    // NOTE: there used to be a "CurrentContact cookie shape and SameSite policy"
+    // test here, comparing the CurrentContact cookie's value/SameSite attribute
+    // between environments. Removed 2026-09-23 per Dev feedback on the original
+    // finding (XBK-26): CurrentContact is an XbyK-platform cookie the app can't
+    // modify - it ships with its "secure"/SameSite attributes out of the box.
+    // Confirmed not a bug; don't re-add this check without new evidence it's
+    // actionable.
 
     test('Environment Compare - robots.txt Sitemap: lines point at their own domain', async ({ baseURL }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop-chromium', 'robots.txt is device-independent.');

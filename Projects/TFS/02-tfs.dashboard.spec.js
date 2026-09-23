@@ -48,6 +48,31 @@ test.afterEach(async ({ page }, testInfo) => {
 // defect, and prefer `--workers=1` when reliability matters more than speed.
 test.describe.configure({ mode: 'serial' });
 
+// Confirmed 2026-09-22: a genuine, reproducible bug in the account-switching tests' own
+// restore-to-default step - during a full 11-spec regression run, the account dropdown toggle
+// stayed genuinely DISABLED (the app's own loading-state indicator, not a Playwright actionability
+// false start) for the full 30s test timeout on mobile-chromium specifically, so
+// selectAccount(page, DEFAULT_ACCOUNT_NAME) never completed and the account was left on
+// "JAMAL SARFRAZ" (one of the 5 accounts this test cycles through) for the rest of the run. That
+// single failure cascaded into 37 further failures across 03/04/06 on that same project (wrong
+// account = wrong personal details, wrong filter/sort results, wrong pagination) - a real,
+// high-blast-radius risk given this file's account-switching tests run FIRST in file order. Fixed
+// with the same safety-net pattern already used in 07-tfs.payments.spec.js: a file-level
+// `afterAll` that makes its own attempt to restore the default account regardless of whether the
+// in-test restore succeeded - `page`/`context` aren't available in `afterAll` (they're
+// test-scoped), so it opens its own short-lived context via the `browser` fixture instead. This is
+// a genuine defect in the app itself (a control shouldn't stay disabled indefinitely) as much as a
+// test-robustness gap - documented here rather than silently worked around, in case it's worth
+// raising with the team if it keeps recurring.
+test.afterAll(async ({ browser }, testInfo) => {
+    const context = await browser.newContext({ storageState: testInfo.project.use.storageState, baseURL: testInfo.project.use.baseURL });
+    const page = await context.newPage();
+    await page.goto(DASHBOARD_PATH, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('load').catch(() => { });
+    await selectAccount(page, DEFAULT_ACCOUNT_NAME).catch(() => { });
+    await context.close();
+});
+
 // ============================================================================
 // Coverage notes - the portal Dashboard ("/portal/")
 // ============================================================================
@@ -271,6 +296,10 @@ test('Dashboard - Loads After Login With Header Controls Visible', async ({ page
     await test.step('Open the dashboard', async () => {
         await gotoDashboard(page);
         await expect(page, 'Dashboard should load at /portal/').toHaveURL(new URL(DASHBOARD_PATH, baseURL).toString());
+        // Confirmed 2026-09-21: Dashboard and FAQs are the only two pages in this portal whose
+        // <title> also carries the "| The Fuel Store" suffix - every other page's title is just
+        // its own name (e.g. "Invoices", "Payments"). Not environment-specific.
+        await expect(page, 'Dashboard should load with the expected title').toHaveTitle('Dashboard | The Fuel Store');
     });
 
     await test.step('Account dropdown shows the default account preselected', async () => {
@@ -346,6 +375,12 @@ test('Dashboard - Switching Accounts Updates the Selected Account and Chart Data
 });
 
 test('Dashboard - Selecting Different Accounts Updates the Summary Cards and Charts', async ({ page }) => {
+    // This test cycles 5 accounts, each a real network round-trip - confirmed 2026-09-22 the
+    // default 30s budget is genuinely tight even in the healthy case (22-25s observed) and can be
+    // exceeded outright if the account dropdown's own disabled-while-loading state runs long on a
+    // given account switch (see the file-level `afterAll` safety-net above for why a single
+    // exceeded timeout here previously cascaded into many unrelated failures downstream).
+    test.setTimeout(60000);
     await gotoDashboard(page);
 
     let previousFingerprint = null;
