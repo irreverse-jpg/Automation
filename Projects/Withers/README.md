@@ -56,6 +56,12 @@ Current default:
 
 - `https://w-uat.hosted.positive.co.uk/en-gb`
 
+Three environments exist for this project (same naming convention as the Care UK project's UAT2/XbyK/Live):
+
+- **UAT** — `https://w-uat.hosted.positive.co.uk/en-gb`
+- **XbyK** — `https://withers-xbyk-qa.hosted.positive.co.uk/en-gb` (added 2026-09-25)
+- **Live** — `https://www.withersworldwide.com/en-gb`
+
 When you want the project to point somewhere else by default, change that one value in [playwright.config.js](playwright.config.js).
 
 For one-off terminal runs, `WITHERS_BASE_URL` still overrides the config default.

@@ -36,6 +36,7 @@ module.exports = defineConfig({
         Change the baseURL manually to run the desired environment.
         For UAT: https://w-uat.hosted.positive.co.uk/en-gb
         For Live: https://www.withersworldwide.com/en-gb
+        For XbyK: https://withers-xbyk-qa.hosted.positive.co.uk/en-gb
         */
         baseURL: process.env.WITHERS_BASE_URL || 'https://w-uat.hosted.positive.co.uk/en-gb',
     },

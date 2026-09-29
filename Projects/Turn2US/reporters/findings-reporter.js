@@ -27,7 +27,8 @@ const FRIENDLY_FILE_NAMES = {
     '02-turn2us.meganav.spec.js': 'Main Menu (Meganav)',
     '03-turn2us.footer.spec.js': 'Footer',
     '04-turn2us.search.spec.js': 'Site Search',
-    '05-turn2us.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
+    '05-turn2us.getsupport.spec.js': 'Get Support',
+    '15-turn2us.nonfunctional.spec.js': 'Technical Health (SEO/Security/Accessibility)',
 };
 
 const FRIENDLY_PROJECT_NAMES = {

@@ -16,8 +16,11 @@ Live carries some extra content and a few differently-named menu options versus 
 - `02-turn2us.meganav.spec.js` — Main menu (meganav) — built out (meganav presence, header logo, expand each root item, navigate every second-level link). Only 2 levels deep on this site (no third level), unlike most other client projects.
 - `03-turn2us.footer.spec.js` — Footer (built out: footer presence, all 14 footer links, social links). No separate "Legal Links" test - unlike most other projects, Turn2us's legal links (Cookie/Privacy/Terms/Accessibility) aren't in their own footer column, so they're covered by "Footer - Verify Links" like every other footer link.
 - `04-turn2us.search.spec.js` — Site search (built out: Empty Query, With and Without Results, Pagination of Results, Clear Search and Second Search). No sort-by test - unlike most other projects, Turn2us has no sort options, so the 4th test instead covers the results page's own separate search box and its "Clear search" behaviour.
-- `05-turn2us.nonfunctional.spec.js` — SEO / security / accessibility (homepage only for now)
-- `06-turn2us.load.k6.js` — k6 load test scaffold (homepage + robots.txt/sitemap.xml only for now)
+- `05-turn2us.getsupport.spec.js` — "Get support" meganav section: 6 standard destination traversals (Benefits Calculator, Grants Search, Turn2us PIP Helper, Information about Benefits, Information for your Situation, Turn2us Grants Programmes), plus 2 of the Benefits Calculator landing page's 3 feature-card sub-traversals (card 1 "Use the Turn2us Benefits Calculator" incl. a full 18-screen deterministic wizard walkthrough, and card 2 "Return to a calculation"). Card 3 ("Your Situation") and the varied-journey permutation sweep are future work — see the file's own coverage notes and [[project_turn2us_benefits_calculator_journey]] in memory.
+- `15-turn2us.nonfunctional.spec.js` — SEO / security / accessibility (homepage only for now)
+- `16-turn2us.load.k6.js` — k6 load test scaffold (homepage + robots.txt/sitemap.xml only for now)
+
+Numbering intentionally leaves 06-14 open for further "Get support"-style content-section specs as they're built out.
 
 Every spec file's own header comment (a "Coverage notes" box right below the imports) lists its exact test list and any confirmed defects/environment differences — read that first before changing a file.
 

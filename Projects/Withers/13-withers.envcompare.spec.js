@@ -273,7 +273,17 @@ async function getFooterGroups(page) {
 // present regardless of open/closed responsive state), rather than clicking
 // through - matching the underlying structure `02-withers.meganav.spec.js`
 // drives interactively, but without needing to expand every branch.
+//
+// The menu's full label set (300+ second-level items) hydrates in after the
+// initial `domcontentloaded` navigation used elsewhere in this file, so
+// reading it too early is a race, not a stable snapshot - confirmed
+// 2026-09-25 by re-running the comparison with a settled page 3 times in a
+// row and getting the opposite (but internally consistent) result each time
+// versus one unsettled `domcontentloaded` read. Wait for the network to go
+// quiet, plus a short fixed settle, before reading the tree.
 async function getNavTree(page) {
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => { });
+    await page.waitForTimeout(1500);
     return page.evaluate(() => {
         const norm = (v) => (v || '').replace(/\s+/g, ' ').trim();
         const primaryNav = document.querySelector('nav[aria-label="Primary"], [role="navigation"][aria-label="Primary"]');
