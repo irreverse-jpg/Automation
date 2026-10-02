@@ -29,7 +29,7 @@ What this file does
   `POST /api/v1/auth/login`), then reuses that one session's cookies for every virtual user's
   requests, mirroring TFS's own confirmed architecture: logging in with these credentials always
   issues the exact same canonical, per-USER session cookie value no matter how many separate
-  contexts/browsers/VUs do it (see [[project_tfs]] memory / every Playwright spec's own "shared
+  contexts/browsers/VUs do it (see the README and every Playwright spec's own "shared
   session" notes) - so sharing one login across VUs here isn't a simplification, it's actually how
   the real app already behaves under concurrent access from the same account.
 - Measures reliability (failures) and speed (response times) for the portal's main pages.

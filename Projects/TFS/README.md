@@ -126,3 +126,7 @@ The workbook has three sheets: **Summary** (checks run/passed/findings count), *
 - `submissionCounter.js` / `submission-counter.txt` provide unique, rotating test data for every real form submission in this project (`09-tfs.additionalservices.spec.js`, `11-tfs.contact.spec.js`) so support staff can identify automated test traffic at a glance.
 - No cookie-consent banner was seen anywhere in the portal on either environment - confirmed not applicable to this login-gated app (the public Live marketing site outside the portal isn't covered by this project).
 - This project is complete: 13 Playwright specs (`01`-`13`) plus one k6 load-test file (`14`), covering every portal page, both environments, and non-functional/load characteristics.
+
+## Credits
+
+This suite was designed and built by **Hector Ortega, QA Lead**, in 2026, as part of the shared QA automation workspace (framework, findings reporter, k6 load testing) also designed and built by Hector.

@@ -36,7 +36,7 @@ test.afterEach(async ({ page }, testInfo) => {
 // ============================================================================
 // Confirmed 2026-09-02: page structure, selectors, copy, and (where noted) quirks are IDENTICAL
 // on QA and Live, and across desktop/tablet/mobile (same pattern as the Dashboard - see
-// [[project_tfs]]). No environment or viewport branching needed anywhere in this file.
+// 02-tfs.dashboard.spec.js). No environment or viewport branching needed anywhere in this file.
 //
 // This page is a template for every other menu page (Invoices, Transactions, Payments, ...) -
 // same header/sidebar chrome, same Filter Results panel shape, same History table with

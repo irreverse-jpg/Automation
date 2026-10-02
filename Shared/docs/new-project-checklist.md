@@ -14,7 +14,7 @@ For workspace orientation and onboarding context, read `Shared/README.md` first.
 
 ## 2) Baseline files
 
-- `package.json`
+- `package.json` (if copied from an existing project, set its `"author"` field to whoever is building the new suite)
 - `playwright.config.js`
 - `.gitignore`
 - `.github/workflows/playwright.yml`

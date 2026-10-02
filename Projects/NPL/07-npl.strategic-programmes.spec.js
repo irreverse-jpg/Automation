@@ -43,7 +43,7 @@ test.afterEach(async ({ page }, testInfo) => {
 //     on the UK Telecoms Lab page instead).
 //   - Only "UK Telecoms Lab (UKTL)" itself is correct on UAT.
 // All 6 are fine on Live. Per the "no skipping broken/wrong links" rule
-// (see [[feedback_no_skipping_broken_links]]), all 6 stay in the traversal
+// (see HANDOVER.md at the repo root), all 6 stay in the traversal
 // loop and are asserted against their correct (Live) destination, so these
 // failures show up on every run rather than being silently excluded.
 //

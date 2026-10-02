@@ -1,6 +1,10 @@
 # Plan: Integrate Automated Tests (Playwright + k6) into TeamCity → Octopus → Server
 
 > Status: **Not started** — captured for later pickup.
+> Update 2026-10-02 (handover): still not started. The workspace now has 8 suites, not the 3 listed in §0
+> (PBS, Withers, CareUK, MCC, RSC, NPL, TFS, Turn2US), and every project now honours a `<CLIENT>_BASE_URL`
+> env var (PBS included). Note that §0's "what runs today" is wrong: the per-project `.github/workflows/playwright.yml`
+> files sit inside `Projects/<Client>/`, and GitHub only runs workflows from the repo root, so they have never run.
 > Author: drafted with Claude, 2026-06-12.
 > Scope: Wire Hector's QA suites (Playwright functional/E2E/accessibility + k6 load) into the existing
 > CI/CD pipeline as a **post-deployment verification + promotion gate**.

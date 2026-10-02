@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "private": true,
     "description": "NPL (National Physical Laboratory) QA automation project (Playwright + k6)",
+    "author": "Hector Ortega, QA Lead",
     "scripts": {
         "test": "npx playwright test -c .",
         "test:headed": "npx playwright test -c . --headed",

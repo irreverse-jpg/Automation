@@ -94,3 +94,7 @@ Passing tests aren't listed row-by-row - they're just counted in the Summary she
 
 - `submissionCounter.js` / `submission-counter.txt` are ready for whichever future form-submission spec needs unique, rotating test data (no submission specs exist yet).
 - No cookie-consent banner (e.g. OneTrust) was observed on a first pass of either environment as of 2026-07-20 - the dismissal helper in `01-rsc.homepage.spec.js` is kept anyway (matching the convention across other client projects) in case one renders conditionally, and is a no-op otherwise.
+
+## Credits
+
+This suite was designed and built by **Hector Ortega, QA Lead**, in 2026, as part of the shared QA automation workspace (framework, findings reporter, k6 load testing) also designed and built by Hector.

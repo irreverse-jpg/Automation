@@ -73,7 +73,7 @@ test.afterEach(async ({ page }, testInfo) => {
 // ("media-centre | Turn2us" instead of a real title). The same URL on Live
 // shows real content ("News and media | Turn2us" / H1 "News and media") -
 // confirmed via direct side-by-side probing, not just a copy/paste error
-// this time (see [[feedback_verify_before_reporting_defect]] for why that
+// this time (see "Verify before reporting a defect" in HANDOVER.md for why that
 // caveat matters here specifically - an earlier href for a different footer
 // link in this same file was originally misreported as broken due to a
 // transcription mistake, then corrected).

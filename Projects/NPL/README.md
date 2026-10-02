@@ -91,3 +91,7 @@ This is powered by `reporters/findings-reporter.js` (configured in `playwright.c
 - `submissionCounter.js` / `submission-counter.txt` drive unique, rotating test data for the "Share your feedback" form so repeated runs don't resubmit identical data. This file IS committed (not gitignored) so the counter persists across machines/CI runs.
 - The feedback form's real Google reCAPTCHA v2 means its "Validate Successful Submission" test skips outright in headless runs (`testInfo.project.use?.headless !== false`) - solving it needs a real headed session with a human present. Run `npm run test:headed` and solve the CAPTCHA manually when it appears; the test resumes automatically once the token is populated (up to a 5-minute wait).
 - The "Share your feedback" link/form only exists on UAT as of 2026-07-30 - it's not present in Live's footer at all.
+
+## Credits
+
+This suite was designed and built by **Hector Ortega, QA Lead**, in 2026, as part of the shared QA automation workspace (framework, findings reporter, k6 load testing) also designed and built by Hector.

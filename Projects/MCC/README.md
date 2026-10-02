@@ -89,3 +89,7 @@ Passing tests aren't listed row-by-row - they're just counted in the Summary she
 
 - `submissionCounter.js` / `submission-counter.txt` drive unique, rotating test data for the form-submission tests (Debentures, Seasonal Suites, Old Clock Tower Club enquiries) so repeated runs don't resubmit identical data.
 - Real Google reCAPTCHA v2 forms skip their "successful submission" test outright in headless runs (`testInfo.project.use?.headless !== false`), since solving it needs a real headed session.
+
+## Credits
+
+This suite was designed and built by **Hector Ortega, QA Lead**, in 2026, as part of the shared QA automation workspace (framework, findings reporter, k6 load testing) also designed and built by Hector.

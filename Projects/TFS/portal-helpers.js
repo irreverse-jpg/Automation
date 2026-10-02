@@ -3,7 +3,7 @@ const { expect } = require('@playwright/test');
 // Shared selectors/helpers for the header + sidebar chrome common to every page inside the
 // portal ("/portal/*") - confirmed 2026-09-02 identical markup/behaviour across every portal
 // page (Dashboard, Account Details, ...) and across desktop/tablet/mobile (only CSS positioning
-// differs between viewports, never the DOM itself - see [[project_tfs]]/02-tfs.dashboard.spec.js
+// differs between viewports, never the DOM itself - see 02-tfs.dashboard.spec.js
 // for the original confirmation on the Dashboard). New page specs (03+) should import from here
 // rather than redefining these selectors - 02-tfs.dashboard.spec.js predates this file and keeps
 // its own copies rather than being refactored, to avoid touching already-verified test code.

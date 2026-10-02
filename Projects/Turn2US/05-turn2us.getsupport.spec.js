@@ -76,7 +76,7 @@ test.afterEach(async ({ page }, testInfo) => {
 //
 // The full multi-step Benefits Calculator wizard itself (reached via card
 // 1) is its own large, separate body of work - see
-// [[project_turn2us_benefits_calculator_journey]] in memory for the full
+// docs/benefits-calculator-journey.md for the full
 // dictated reference journey. This file currently only covers entering the
 // wizard (its first real screen, "Before We Begin") - the full end-to-end
 // journey/permutation tests are being built separately per Hector's own
@@ -865,9 +865,9 @@ test('Use the Turn2us Benefits Calculator Traversal', async ({ page }) => {
 // ============================================================================
 // This is the FIRST deterministic, end-to-end walkthrough of the full
 // Benefits Calculator wizard (~18 real screens), following the exact
-// reference journey dictated by Hector from his own manual walkthrough
-// (2026-09-23/24) - see [[project_turn2us_benefits_calculator_journey]] in
-// memory. It is a single fixed path (not a permutation sweep - that is
+// reference journey dictated by Hector from a manual walkthrough
+// (2026-09-23/24) - see docs/benefits-calculator-journey.md
+// It is a single fixed path (not a permutation sweep - that is
 // separate future work per Hector's own phased plan). Every selector below
 // was captured by live-probing the real DOM with a throwaway
 // playwright-core script (screen by screen), not guessed from the text
